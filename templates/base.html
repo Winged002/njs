@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#007AFF">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='brand/syntal-star.svg') }}">
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v={{ app_version }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="{{ 'is-authenticated' if current_user.is_authenticated else 'is-public' }} app-syntal-family-ui app-syntal-star-brand">
+<a class="skip-link" href="#main-content">Skip to main content</a>
+{% if current_user.is_authenticated %}
+{% set ep = request.endpoint or '' %}
+{% if ep == 'dashboard' %}{% set area = 'home' %}
+{% elif ep in ['campaign_list','campaign_new','campaign_setup','campaign_setup_status','campaign_prepare','campaign_strategy','campaign_review','campaign_detail'] %}{% set area = 'campaigns' %}
+{% elif ep in ['collection_list','collection_detail','collection_add_url','collection_add_youtube','collection_add_note','collection_upload','collection_scrape_link','collection_retry_source','collection_items_api'] %}{% set area = 'collections' %}
+{% elif ep in ['product_list','product_new','product_detail','product_delete'] %}{% set area = 'products' %}
+{% elif ep in ['feeds','feed_toggle','feed_delete'] %}{% set area = 'sources' %}
+{% elif ep in ['newsjacking','newsjacking_run','newsjacking_worker_new','newsjacking_worker_detail','newsjacking_worker_run','newsjacking_worker_toggle','newsjacking_worker_delete','newsjacking_worker_learning','newsjacking_worker_learning_refresh','newsjacking_worker_learning_apply'] %}{% set area = 'automation' %}
+{% elif ep in ['article_list','article_review_queue','article_detail','article_preview','article_save_notes','article_request_changes','article_restore_version','article_sign','article_engagement_settings','article_responses_export','article_submission_retry_blackbook','author_profile_settings','websites','page_detail','page_preview','page_regenerate','page_publish','domains_workspace','domain_verify','domain_delete','domain_route_delete','page_add_route','website_connect_domain','website_save_notes','website_request_changes','website_domain_verify','landing_page_studio','landing_page_manual_create','landing_page_ai_create','landing_page_editor','landing_page_manual_save','landing_page_duplicate','landing_page_delete'] %}{% set area = 'content' %}
+{% elif ep in ['analytics_workspace','analytics_settings_view','experiment_list','experiment_new','experiment_detail','experiment_suggest','experiment_start','experiment_pause','experiment_complete','experiment_delete','experiment_preview','syntal_ai_control_ext.ai_control_page'] %}{% set area = 'analytics' %}
+{% elif ep in ['newsletter_home','newsletter_workspace','newsletter_create','newsletter_audience','newsletter_engagement','newsletter_engagement_refresh','newsletter_engagement_analyze','newsletter_manage','newsletter_view','newsletter_distribute','newsletter_learn','newsletter_schedule_save','newsletter_schedule_delete','newsletter_generate_now','newsletter_edition_detail','newsletter_edition_save','newsletter_edition_ready','newsletter_edition_regenerate','newsletter_edition_archive','newsletter_edition_preview','newsletter_edition_download','newsletter_distribution_package','newsletter_distribution_record','newsletter_distribution_reset','newsletter_blackbook_distribute'] %}{% set area = 'newsletter' %}
+{% elif ep in ['social_workspace','social_calendar_view','social_queue_view','social_posts_view','social_settings_view','social_settings_save','social_generate_article','social_post_save','social_post_schedule','social_post_archive','social_job_status'] %}{% set area = 'social' %}
+{% else %}{% set area = 'home' %}{% endif %}
+<div class="app-shell" data-app-shell>
+  <aside class="primary-rail" aria-label="Main navigation">
+    <a class="rail-brand star-brand" href="{{ url_for('dashboard') }}" aria-label="Newsjacking home"><span class="brand-star-tile"><img src="{{ url_for('static', filename='brand/syntal-star.svg') }}" alt=""></span></a>
+    <nav class="rail-nav">
+      <a href="{{ url_for('dashboard') }}" class="rail-item {{ 'is-active' if area == 'home' else '' }}" data-area="home" data-tooltip="Overview" aria-label="Overview">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg><span>Overview</span>
+      </a>
+      <a href="{{ url_for('collection_list') }}" class="rail-item {{ 'is-active' if area == 'collections' else '' }}" data-area="collections" data-tooltip="Collections" aria-label="Collections">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM7 8h10M7 12h10M7 16h6"/></svg><span>Collections</span>
+      </a>
+      <a href="{{ url_for('campaign_list') }}" class="rail-item {{ 'is-active' if area == 'campaigns' else '' }}" data-area="campaigns" data-tooltip="Campaigns" aria-label="Campaigns">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4zM8 3v3M16 3v3M4 10h16"/></svg><span>Campaigns</span>
+      </a>
+      <a href="{{ url_for('product_list') }}" class="rail-item {{ 'is-active' if area == 'products' else '' }}" data-area="products" data-tooltip="Products" aria-label="Products">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14l1 13H4L5 7Zm3 0a4 4 0 0 1 8 0"/></svg><span>Products</span>
+      </a>
+      <a href="{{ url_for('feeds') }}" class="rail-item {{ 'is-active' if area == 'sources' else '' }}" data-area="sources" data-tooltip="Sources" aria-label="Sources">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18a1 1 0 1 0 0 .01M4 11a9 9 0 0 1 9 9M4 5a15 15 0 0 1 15 15"/></svg><span>Sources</span>
+      </a>
+      <a href="{{ url_for('newsjacking') }}" class="rail-item {{ 'is-active' if area == 'automation' else '' }}" data-area="automation" data-tooltip="Newsjacking" aria-label="Newsjacking">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 5 13h6l-1 9 9-13h-6z"/></svg><span>Newsjacking</span>
+      </a>
+      <a href="{{ url_for('article_list') }}" class="rail-item {{ 'is-active' if area == 'content' else '' }}" data-area="content" data-tooltip="Content" aria-label="Content">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM15 3v5h4M9 12h7M9 16h7"/></svg><span>Content</span>
+      </a>
+      <a href="{{ url_for('newsletter_home') }}" class="rail-item {{ 'is-active' if area == 'newsletter' else '' }}" data-area="newsletter" data-tooltip="Newsletters" aria-label="Newsletters">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3zM3 7l9 7 9-7M7 10v5M17 10v5"/></svg><span>Newsletters</span>
+      </a>
+      <a href="{{ url_for('social_calendar_view') }}" class="rail-item {{ 'is-active' if area == 'social' else '' }}" data-area="social" data-tooltip="Distribution" aria-label="Distribution">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM17 14a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM7 23a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM9.5 5.5l5 3M9.5 18.5l5-5"/></svg><span>Distribution</span>
+      </a>
+      <a href="{{ url_for('analytics_workspace') }}" class="rail-item {{ 'is-active' if area == 'analytics' else '' }}" data-area="analytics" data-tooltip="Analytics" aria-label="Analytics">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V10M10 19V5M16 19v-7M22 19V2M2 19h22"/></svg><span>Analytics</span>
+      </a>
+    </nav>
+    <div class="rail-bottom">
+      <button class="rail-item rail-toggle" type="button" data-context-toggle data-tooltip="Toggle menu" aria-label="Toggle secondary navigation" aria-expanded="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg><span>Menu</span>
+      </button>
+      <div class="user-chip" title="{{ current_user.username }}">{{ (current_user.username or 'U')[:1]|upper }}</div>
+    </div>
+  </aside>
+
+  <aside class="context-nav" data-context-nav data-context-area="{{ area }}" aria-label="Context navigation">
+    <div class="context-head">
+      <div class="context-product"><span class="product-mark brand-star-tile"><img src="{{ url_for('static', filename='brand/syntal-star.svg') }}" alt=""></span><div><strong>Newsjacking</strong><small>{{ current_user.organization_name or 'Syntal workspace' }}</small></div></div>
+      <button class="context-close" type="button" data-context-toggle aria-label="Collapse secondary navigation"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button>
+    </div>
+    {% if sso_enabled and (current_user.organization_name or current_user.syntal_org_id) %}
+    <details class="organization-menu context-organization-menu" data-org-switcher data-current-org="{{ current_user.syntal_org_id or '' }}" data-org-endpoint="{{ url_for('auth_organizations') }}" data-csrf="{{ csrf_token() }}" data-next="{{ request.full_path if request.full_path else request.path }}">
+      <summary class="context-workspace-switcher" title="Choose organization">
+        <span class="context-workspace-avatar">{{ (current_user.organization_name or current_user.syntal_org_id or 'O')[:1]|upper }}</span>
+        <span class="context-workspace-copy"><small>Organization</small><strong>{{ current_user.organization_name or current_user.syntal_org_id }}</strong></span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
+      </summary>
+      <div class="organization-dropdown organization-dropdown-context">
+        <div class="organization-dropdown-head"><span>Organizations</span><small>SSO managed</small></div>
+        <div class="organization-options" data-org-options>
+          {% for org in sso_organizations %}
+          <form method="post" action="{{ url_for('auth_switch_organization_to', organization_id=org.id) }}" class="organization-option-form" data-no-pending="true">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ request.full_path if request.full_path else request.path }}">
+            <button type="submit" class="organization-option {{ 'is-current' if org.id == current_user.syntal_org_id else '' }}" {{ 'disabled' if org.id == current_user.syntal_org_id else '' }}>
+              <span class="organization-option-avatar">{{ (org.name or org.id or 'O')[:1]|upper }}</span><span><strong>{{ org.name or org.id }}</strong><small>{{ org.role or ('Current workspace' if org.id == current_user.syntal_org_id else 'Syntal organization') }}</small></span>{% if org.id == current_user.syntal_org_id %}<em>✓</em>{% endif %}
+            </button>
+          </form>
+          {% endfor %}
+        </div>
+        <div class="organization-directory-status" data-org-status>{{ 'Connected to Syntal directory' if sso_organizations_connected else 'Reconnect to load all organizations' }}</div>
+        <a class="organization-manage-link" href="{{ url_for('auth_switch_organization', next=request.full_path if request.full_path else request.path) }}"><span>Choose in Syntal</span><span>↗</span></a>
+      </div>
+    </details>
+    {% endif %}
+
+    {% if area == 'home' %}
+    <nav class="context-actions">
+      <a class="context-action {{ 'is-active' if ep == 'dashboard' else '' }}" href="{{ url_for('dashboard') }}"><span class="context-icon">⌂</span><span><strong>Overview</strong><small>Publishing pulse</small></span></a>
+      <a class="context-action" href="{{ url_for('campaign_new') }}"><span class="context-icon">＋</span><span><strong>New campaign</strong><small>Start guided setup</small></span></a>
+      <a class="context-action" href="{{ url_for('article_list') }}"><span class="context-icon">↗</span><span><strong>Recent output</strong><small>Review generated articles</small></span></a>
+    </nav>
+    {% elif area == 'campaigns' %}
+    {% set selected_campaign_id = request.view_args.get('campaign_id') if request.view_args else none %}
+    <nav class="context-actions campaign-context-actions">
+      <a class="context-action {{ 'is-active' if ep == 'campaign_list' else '' }}" href="{{ url_for('campaign_list') }}"><span class="context-icon">▦</span><span><strong>All campaigns</strong><small>Portfolio overview</small></span></a>
+      <a class="context-action {{ 'is-active' if ep == 'campaign_new' else '' }}" href="{{ url_for('campaign_new') }}"><span class="context-icon">＋</span><span><strong>New campaign</strong><small>Build from Collection evidence</small></span></a>
+      {% if navigation_campaigns %}
+      <div class="context-section-label">Available campaigns</div>
+      <div class="campaign-nav-list">
+        {% for campaign_nav in navigation_campaigns %}
+          {% set setup = campaign_nav.setup_status or 'complete' %}
+          {% if setup in ['queued','researching','suggestions_ready','failed'] %}{% set campaign_href = url_for('campaign_setup', campaign_id=campaign_nav._id) %}
+          {% elif setup == 'review' %}{% set campaign_href = url_for('campaign_review', campaign_id=campaign_nav._id) %}
+          {% else %}{% set campaign_href = url_for('campaign_detail', campaign_id=campaign_nav._id) %}{% endif %}
+          <a class="context-action context-campaign {{ 'is-active' if selected_campaign_id and selected_campaign_id|string == campaign_nav._id|string else '' }}" href="{{ campaign_href }}">
+            <span class="campaign-status-dot {{ 'is-busy' if setup in ['queued','researching'] else ('is-paused' if campaign_nav.status == 'paused' else '') }}"></span>
+            <span><strong>{{ campaign_nav.title }}</strong><small>{{ setup|replace('_',' ') if setup != 'complete' else (campaign_nav.status or 'draft') }}</small></span>
+            {% if setup in ['queued','researching'] %}<span class="mini-spinner" aria-label="Working"></span>{% endif %}
+          </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% if selected_campaign_id %}
+      <div class="context-section-label">Selected campaign</div>
+      <a class="context-action {{ 'is-active' if ep == 'campaign_detail' else '' }}" href="{{ url_for('campaign_detail', campaign_id=selected_campaign_id) }}"><span class="context-icon">◎</span><span><strong>Workspace</strong><small>Evidence, hooks and articles</small></span></a>
+      <a class="context-action {{ 'is-active' if ep in ['campaign_setup','campaign_review'] else '' }}" href="{{ url_for('campaign_review', campaign_id=selected_campaign_id) }}"><span class="context-icon">✓</span><span><strong>Strategy & review</strong><small>Operating brief</small></span></a>
+      {% endif %}
+    </nav>
+    {% elif area == 'collections' %}
+    <nav class="context-actions">
+      <a class="context-action {{ 'is-active' if ep == 'collection_list' else '' }}" href="{{ url_for('collection_list') }}"><span class="context-icon">▤</span><span><strong>All collections</strong><small>Reusable evidence libraries</small></span></a>
+      <a class="context-action" href="{{ url_for('collection_list') }}"><span class="context-icon">＋</span><span><strong>New collection</strong><small>Start a research library</small></span></a>
+      {% if request.view_args and request.view_args.get('collection_id') %}{% set colid=request.view_args.get('collection_id') %}<a class="context-action is-active" href="{{ url_for('collection_detail', collection_id=colid) }}"><span class="context-icon">◎</span><span><strong>Collection workspace</strong><small>Add and inspect evidence</small></span></a>{% endif %}
+      <a class="context-action" href="{{ url_for('campaign_new') }}"><span class="context-icon">↗</span><span><strong>Build campaign</strong><small>Compose from selected evidence</small></span></a>
+    </nav>
+    {% elif area == 'products' %}
+    {% set selected_product_id = request.view_args.get('product_id') if request.view_args else none %}
+    <nav class="context-actions">
+      <a class="context-action {{ 'is-active' if ep == 'product_list' else '' }}" href="{{ url_for('product_list') }}"><span class="context-icon">◇</span><span><strong>All products</strong><small>Reusable offers and CTAs</small></span></a>
+      <a class="context-action {{ 'is-active' if ep == 'product_new' else '' }}" href="{{ url_for('product_new') }}"><span class="context-icon">＋</span><span><strong>New product</strong><small>Define offer + evidence</small></span></a>
+      {% if navigation_products %}<div class="context-section-label">Available products</div>{% for product_nav in navigation_products %}<a class="context-action {{ 'is-active' if selected_product_id and selected_product_id|string == product_nav._id|string else '' }}" href="{{ url_for('product_detail', product_id=product_nav._id) }}"><span class="context-icon">◇</span><span><strong>{{ product_nav.name }}</strong><small>{{ product_nav.status or 'draft' }}</small></span></a>{% endfor %}{% endif %}
+    </nav>
+    {% elif area == 'sources' %}
+    <nav class="context-actions">
+      <a class="context-action is-active" href="{{ url_for('feeds') }}"><span class="context-icon">◉</span><span><strong>Source library</strong><small>RSS and Atom feeds</small></span></a>
+      <a class="context-action" href="{{ url_for('feeds') }}#add-source"><span class="context-icon">＋</span><span><strong>Add source</strong><small>Connect a feed URL</small></span></a>
+      <a class="context-action" href="{{ url_for('newsjacking_worker_new') }}"><span class="context-icon">⚡</span><span><strong>Build worker</strong><small>Use sources in a publishing recipe</small></span></a>
+    </nav>
+    {% elif area == 'automation' %}
+    {% set selected_worker_id = request.view_args.get('worker_id') if request.view_args else none %}
+    <nav class="context-actions">
+      <a class="context-action {{ 'is-active' if ep == 'newsjacking' else '' }}" href="{{ url_for('newsjacking') }}"><span class="context-icon">⚡</span><span><strong>All workers</strong><small>Independent publishing recipes</small></span></a>
+      <a class="context-action {{ 'is-active' if ep == 'newsjacking_worker_new' else '' }}" href="{{ url_for('newsjacking_worker_new') }}"><span class="context-icon">＋</span><span><strong>New worker</strong><small>Sources + campaign + products</small></span></a>
+      {% if navigation_workers %}<div class="context-section-label">Worker instances</div>{% for worker_nav in navigation_workers %}<a class="context-action {{ 'is-active' if selected_worker_id and selected_worker_id|string == worker_nav._id|string else '' }}" href="{{ url_for('newsjacking_worker_detail', worker_id=worker_nav._id) }}"><span class="campaign-status-dot {{ '' if worker_nav.enabled else 'is-paused' }}"></span><span><strong>{{ worker_nav.name }}</strong><small>{{ 'enabled' if worker_nav.enabled else 'paused' }} · {{ (worker_nav.learning_mode or 'observe')|capitalize }}{% if worker_nav.last_run_status %} · {{ worker_nav.last_run_status }}{% endif %}</small></span></a>{% endfor %}{% endif %}{% if selected_worker_id %}<div class="context-section-label">Selected worker</div><a class="context-action {{ 'is-active' if ep == 'newsjacking_worker_learning' else '' }}" href="{{ url_for('newsjacking_worker_learning', worker_id=selected_worker_id) }}"><span class="context-icon">↗</span><span><strong>Learning</strong><small>Outcomes and recommendations</small></span></a>{% endif %}
+    </nav>
+    <form class="context-inline-action" method="post" action="{{ url_for('newsjacking_run') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit"><span>▶</span> Run enabled workers</button></form>
+    {% elif area == 'content' %}
+    <nav class="context-actions website-context-actions">
+      <a class="context-action {{ 'is-active' if ep == 'article_review_queue' else '' }}" href="{{ url_for('article_review_queue') }}"><span class="context-icon">✓</span><span><strong>Review queue</strong><small>{{ article_review_count }} awaiting review/signature</small></span>{% if article_review_count %}<span class="count-pill">{{ article_review_count }}</span>{% endif %}</a>
+      <a class="context-action {{ 'is-active' if ep in ['article_list','article_detail','article_preview','article_save_notes','article_request_changes','article_restore_version','article_sign','article_engagement_settings','article_responses_export','article_submission_retry_blackbook'] else '' }}" href="{{ url_for('article_list') }}"><span class="context-icon">≡</span><span><strong>Articles</strong><small>All editorial output</small></span></a>
+      <a class="context-action {{ 'is-active' if ep == 'author_profile_settings' else '' }}" href="{{ url_for('author_profile_settings') }}"><span class="context-icon">●</span><span><strong>Author profile</strong><small>{{ author_profile.full_name if author_profile.completed else 'Required before signing' }}</small></span></a>
+      <div class="context-section-label">Websites</div>
+      <a class="context-action {{ 'is-active' if ep in ['landing_page_studio','landing_page_manual_create','landing_page_ai_create','landing_page_editor','landing_page_manual_save','landing_page_duplicate','landing_page_delete'] else '' }}" href="{{ url_for('landing_page_studio') }}"><span class="context-icon">▤</span><span><strong>Landing Page Studio</strong><small>Manual + AI page authoring</small></span></a>
+      <a class="context-action {{ 'is-active' if ep == 'websites' and request.args.get('domain','internal') == 'internal' else '' }}" href="{{ url_for('websites', domain='internal') }}"><span class="context-icon">⌂</span><span><strong>Internal websites</strong><small>{{ internal_website_host }}</small></span></a>
+      <a class="context-action {{ 'is-active' if ep == 'websites' and request.args.get('connect') else '' }}" href="{{ url_for('websites', connect='1') }}"><span class="context-icon">＋</span><span><strong>Connect domain</strong><small>Add hostname + verify DNS</small></span></a>
+      {% if website_domains %}<div class="context-domain-list">{% for domain in website_domains %}<a class="context-action context-domain {{ 'is-active' if ep == 'websites' and request.args.get('domain') == domain._id|string else '' }}" href="{{ url_for('websites', domain=domain._id) }}"><span class="context-icon">◎</span><span><strong>{{ domain.domain }}</strong><small>{{ domain.status }}</small></span></a>{% endfor %}</div>{% endif %}
+    </nav>
+    {% elif area == 'analytics' %}
+    <nav class="context-actions analytics-context-actions">
+      <a class="context-action {{ 'is-active' if ep == 'analytics_workspace' else '' }}" href="{{ url_for('analytics_workspace') }}"><span class="context-icon">⌁</span><span><strong>Analytics overview</strong><small>Attribution and content performance</small></span></a>
+      <a class="context-action {{ 'is-active' if ep == 'analytics_settings_view' else '' }}" href="{{ url_for('analytics_settings_view') }}"><span class="context-icon">◌</span><span><strong>Privacy settings</strong><small>First-party tracking mode</small></span></a>
+      <a class="context-action {{ 'is-active' if ep in ['experiment_list','experiment_new','experiment_detail','experiment_suggest','experiment_start','experiment_pause','experiment_complete','experiment_delete','experiment_preview'] else '' }}" href="{{ url_for('experiment_list') }}"><span class="context-icon">◫</span><span><strong>Experiments</strong><small>Control vs Challenger testing</small></span></a>
+      <a class="context-action {{ 'is-active' if ep == 'syntal_ai_control_ext.ai_control_page' else '' }}" href="{{ url_for('syntal_ai_control_ext.ai_control_page') }}"><span class="context-icon">✦</span><span><strong>AI Control</strong><small>Syntal AI tool surface</small></span></a>
+      <div class="context-section-label">Domains</div>
+      <a class="context-action" href="{{ url_for('analytics_workspace', entity='domain:' ~ internal_website_host) }}"><span class="context-icon">⌂</span><span><strong>{{ internal_website_host }}</strong><small>Internal publishing</small></span></a>
+      {% for domain in website_domains[:8] %}<a class="context-action" href="{{ url_for('analytics_workspace', entity='domain:' ~ domain.domain) }}"><span class="context-icon">◎</span><span><strong>{{ domain.domain }}</strong><small>{{ domain.status }}</small></span></a>{% endfor %}
+      <div class="context-section-label">Pages</div>
+      {% for page in analytics_nav_pages[:12] %}<a class="context-action" href="{{ url_for('analytics_workspace', entity='page:' ~ page._id) }}"><span class="context-icon">▤</span><span class="analytics-context-copy"><strong title="{{ page.title or 'Untitled page' }}">{{ page.title or 'Untitled page' }}</strong><small>{{ 'published' if page.published else 'draft' }}</small></span></a>{% else %}<div class="context-empty">No pages yet</div>{% endfor %}
+      <div class="context-section-label">Articles</div>
+      {% for article in analytics_nav_articles[:12] %}<a class="context-action" href="{{ url_for('analytics_workspace', entity='article:' ~ article._id) }}"><span class="context-icon">≡</span><span class="analytics-context-copy"><strong title="{{ article.published_metadata.title if article.published_metadata and article.published_metadata.title else (article.metadata.title if article.metadata and article.metadata.title else (article.title or 'Untitled article')) }}">{{ article.published_metadata.title if article.published_metadata and article.published_metadata.title else (article.metadata.title if article.metadata and article.metadata.title else (article.title or 'Untitled article')) }}</strong><small>Article</small></span></a>{% else %}<div class="context-empty">No articles yet</div>{% endfor %}
+    </nav>
+    {% elif area == 'newsletter' %}
+    <nav class="context-actions newsletter-context-actions">
+      <a class="context-action {{ 'is-active' if ep == 'newsletter_home' else '' }}" href="{{ url_for('newsletter_home') }}"><span class="context-icon">⌂</span><span><strong>Overview</strong><small>Workflow and attention</small></span></a>
+      <a class="context-action {{ 'is-active' if ep == 'newsletter_create' else '' }}" href="{{ url_for('newsletter_create') }}"><span class="context-icon">1</span><span><strong>Plan</strong><small>Cadence, sources and voice</small></span></a>
+      <a class="context-action {{ 'is-active' if ep == 'newsletter_audience' else '' }}" href="{{ url_for('newsletter_audience') }}"><span class="context-icon">2</span><span><strong>Audience</strong><small>BlackBook intelligence</small></span></a>
+      <a class="context-action {{ 'is-active' if ep in ['newsletter_engagement','newsletter_engagement_refresh','newsletter_engagement_analyze'] else '' }}" href="{{ url_for('newsletter_engagement') }}"><span class="context-icon">3</span><span><strong>Engagement</strong><small>Mailchimp AI segmentation</small></span></a>
+      <a class="context-action {{ 'is-active' if ep in ['newsletter_workspace','newsletter_manage','newsletter_schedule_save','newsletter_schedule_delete','newsletter_generate_now'] else '' }}" href="{{ url_for('newsletter_manage') }}"><span class="context-icon">4</span><span><strong>Build</strong><small>Generate editions</small></span></a>
+      <a class="context-action {{ 'is-active' if ep in ['newsletter_view','newsletter_edition_detail','newsletter_edition_save','newsletter_edition_ready','newsletter_edition_regenerate','newsletter_edition_archive','newsletter_edition_preview','newsletter_edition_download'] else '' }}" href="{{ url_for('newsletter_view') }}"><span class="context-icon">5</span><span><strong>Review</strong><small>Edit and approve</small></span></a>
+      <a class="context-action {{ 'is-active' if ep in ['newsletter_distribute','newsletter_distribution_package','newsletter_distribution_record','newsletter_distribution_reset','newsletter_blackbook_distribute'] else '' }}" href="{{ url_for('newsletter_distribute') }}"><span class="context-icon">6</span><span><strong>Distribute</strong><small>BlackBook → Mailchimp</small></span></a>
+      <a class="context-action {{ 'is-active' if ep == 'newsletter_learn' else '' }}" href="{{ url_for('newsletter_learn') }}"><span class="context-icon">7</span><span><strong>Learn</strong><small>Campaign feedback</small></span></a>
+    </nav>
+    {% elif area == 'social' %}
+    <nav class="context-actions">
+      <a class="context-action {{ 'is-active' if ep in ['social_workspace','social_calendar_view'] else '' }}" href="{{ url_for('social_calendar_view') }}"><span class="context-icon">▦</span><span><strong>Calendar</strong><small>Distribution by week</small></span></a>
+      <a class="context-action {{ 'is-active' if ep in ['social_queue_view','social_post_schedule'] else '' }}" href="{{ url_for('social_queue_view') }}"><span class="context-icon">◷</span><span><strong>Queue</strong><small>Schedule drafts and upcoming posts</small></span></a>
+      <a class="context-action {{ 'is-active' if ep in ['social_posts_view','social_post_save','social_post_archive','social_generate_article','social_job_status'] else '' }}" href="{{ url_for('social_posts_view') }}"><span class="context-icon">✦</span><span><strong>Social posts</strong><small>Generated copy and editorial images</small></span></a>
+      <a class="context-action {{ 'is-active' if ep in ['social_settings_view','social_settings_save'] else '' }}" href="{{ url_for('social_settings_view') }}"><span class="context-icon">⚙</span><span><strong>Settings</strong><small>Cadence, platforms and brand</small></span></a>
+    </nav>
+    {% endif %}
+
+    <div class="context-account">
+      <div class="account-profile">
+        <span class="account-avatar">{{ (current_user.display_name or current_user.username or 'U')[:1]|upper }}</span>
+        <span class="account-profile-copy"><strong>{{ current_user.display_name or current_user.username }}</strong><small>{{ current_user.email or current_user.username }}</small></span>
+        {% if credits_enabled %}<span class="account-credit">{{ current_credits }}</span>{% endif %}
+      </div>
+      <div class="account-links">
+        <a class="account-link" href="{{ url_for('author_profile_settings') }}"><span>Author profile</span><span>{{ '✓' if author_profile.completed else '→' }}</span></a>
+        <a class="account-link" href="{{ url_for('blackbook_integration') }}"><span>BlackBook</span><span>→</span></a>
+        {% if sso_enabled %}<a class="account-link" href="{{ sso_account_url }}" target="_blank" rel="noopener"><span>Syntal account</span><span>↗</span></a>{% endif %}
+      </div>
+      <div class="account-footer"><span>v{{ app_version }}</span><form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="signout-button" type="submit">Sign out</button></form></div>
+    </div>
+  </aside>
+  {% block tertiary_nav %}{% endblock %}
+
+  <div class="mobile-backdrop" data-mobile-backdrop></div>
+
+  <main class="workspace" id="main-content">
+    <header class="workspace-bar">
+      <button class="mobile-nav-button" type="button" data-mobile-nav aria-label="Open navigation"><span></span><span></span><span></span></button>
+      <div class="workspace-path"><span>{{ {'home':'Overview','campaigns':'Campaigns','collections':'Collections','products':'Products','sources':'Sources','automation':'Newsjacking','content':'Content','newsletter':'Newsletters','social':'Distribution','analytics':'Analytics'}[area] }}</span>{% block workspace_context %}{% endblock %}</div>
+      <div class="workspace-actions">
+        <details class="quick-create" data-quick-create>
+          <summary aria-label="Create new item"><span class="quick-create-plus">＋</span><span>Create</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></summary>
+          <div class="quick-create-menu">
+            <span class="quick-create-label">Create new</span>
+            <a href="{{ url_for('collection_list') }}"><span class="quick-create-icon">▤</span><span><strong>Collection</strong><small>Start an evidence library</small></span></a>
+            <a href="{{ url_for('campaign_new') }}"><span class="quick-create-icon">◎</span><span><strong>Campaign</strong><small>Build a brief from evidence</small></span></a>
+            <a href="{{ url_for('product_new') }}"><span class="quick-create-icon">◇</span><span><strong>Product</strong><small>Define offer, proof and CTA</small></span></a>
+            <a href="{{ url_for('newsjacking_worker_new') }}"><span class="quick-create-icon">⚡</span><span><strong>Newsjack Worker</strong><small>Combine sources, campaign and products</small></span></a>
+            <a href="{{ url_for('experiment_new') }}"><span class="quick-create-icon">◫</span><span><strong>Experiment</strong><small>Test a published page or article</small></span></a>
+            <a href="{{ url_for('landing_page_studio') }}"><span class="quick-create-icon">□</span><span><strong>Landing page</strong><small>Create manually or with AI</small></span></a>
+            <a href="{{ url_for('newsletter_create') }}"><span class="quick-create-icon">✉</span><span><strong>Newsletter</strong><small>Create a recurring email briefing</small></span></a>
+            <a href="{{ url_for('feeds') }}#add-source"><span class="quick-create-icon">◉</span><span><strong>Source</strong><small>Add a monitored feed</small></span></a>
+          </div>
+        </details>
+        {% if sso_enabled and (current_user.organization_name or current_user.syntal_org_id) %}
+        <details class="organization-menu workspace-organization-menu" data-org-switcher data-current-org="{{ current_user.syntal_org_id or '' }}" data-org-endpoint="{{ url_for('auth_organizations') }}" data-csrf="{{ csrf_token() }}" data-next="{{ request.full_path if request.full_path else request.path }}">
+          <summary class="organization-switcher" title="Choose organization">
+            <span class="organization-mark">{{ (current_user.organization_name or current_user.syntal_org_id or 'O')[:1]|upper }}</span>
+            <span class="organization-copy"><small>Workspace</small><strong>{{ current_user.organization_name or current_user.syntal_org_id }}</strong></span>
+            <span class="organization-switch-label">Choose</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
+          </summary>
+          <div class="organization-dropdown">
+            <div class="organization-dropdown-head"><span>Organizations</span><small>SSO managed</small></div>
+            <div class="organization-options" data-org-options>
+              {% for org in sso_organizations %}
+              <form method="post" action="{{ url_for('auth_switch_organization_to', organization_id=org.id) }}" class="organization-option-form" data-no-pending="true">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ request.full_path if request.full_path else request.path }}">
+                <button type="submit" class="organization-option {{ 'is-current' if org.id == current_user.syntal_org_id else '' }}" {{ 'disabled' if org.id == current_user.syntal_org_id else '' }}>
+                  <span class="organization-option-avatar">{{ (org.name or org.id or 'O')[:1]|upper }}</span><span><strong>{{ org.name or org.id }}</strong><small>{{ org.role or ('Current workspace' if org.id == current_user.syntal_org_id else 'Syntal organization') }}</small></span>{% if org.id == current_user.syntal_org_id %}<em>✓</em>{% endif %}
+                </button>
+              </form>
+              {% endfor %}
+            </div>
+            <div class="organization-directory-status" data-org-status>{{ 'Connected to Syntal directory' if sso_organizations_connected else 'Reconnect to load all organizations' }}</div>
+            <a class="organization-manage-link" href="{{ url_for('auth_switch_organization', next=request.full_path if request.full_path else request.path) }}"><span>Choose in Syntal</span><span>↗</span></a>
+          </div>
+        </details>
+        {% endif %}
+        <div class="workspace-meta" data-workspace-meta><span class="system-dot"></span><span data-workspace-status>System online</span></div>
+      </div>
+    </header>
+    <div class="workspace-content">
+      <div class="live-activity" data-live-activity hidden><span class="live-activity-spinner"></span><div><strong data-live-stage>Background work in progress</strong><small data-live-detail>This page will refresh when the work is ready.</small></div><span class="live-activity-pulse"></span></div>
+{% else %}
+<main class="auth-shell" id="main-content">
+{% endif %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}<div class="flash-stack {{ 'auth-flashes' if not current_user.is_authenticated else '' }}">{% for category, message in messages %}<div class="flash {{ category }}"><span>{{ message }}</span>{% if current_user.is_authenticated %}<button type="button" data-dismiss-flash aria-label="Dismiss">×</button>{% endif %}</div>{% endfor %}</div>{% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+{% if current_user.is_authenticated %}
+    </div>
+  </main>
+</div>
+{% else %}
+</main>
+{% endif %}
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

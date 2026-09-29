@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Domains & routing · Newsjacking{% endblock %}
+{% block workspace_context %}<span>›</span><strong>Domains & routing</strong>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="eyebrow">PUBLISHING</div><h1>Domains & routing</h1><p>Connect a hostname, point its DNS to NJS, then verify it. NJS automatically configures the publishing proxy and HTTPS before the domain becomes active.</p></div>
+  <a class="secondary button-link" href="{{ url_for('websites') }}#generate-page">Generate a page</a>
+</div>
+
+<div class="publishing-intro-grid">
+  <section class="panel domain-connect-card">
+    <div class="panel-head"><div><h2>Connect a domain</h2><p class="muted">You control the DNS. Once the A record resolves here, NJS automatically activates Nginx and HTTPS.</p></div></div>
+    <form method="post" class="form-stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Domain or subdomain<input name="domain" placeholder="news.example.com" required></label>
+      <button class="primary" type="submit">Add domain</button>
+    </form>
+  </section>
+  <section class="panel dns-explainer">
+    <div class="eyebrow">REQUIRED DNS RECORD</div>
+    <div class="dns-record"><span>A</span><strong>@ / selected host</strong><code>{{ publishing_ip }}</code></div>
+    <p class="muted">If you connect a subdomain such as <code>news.example.com</code>, create the A record for <code>news</code>. Keep the record DNS-only while verifying if your DNS provider proxies traffic.</p>
+    <div class="mini-flow"><span>1. Add domain</span><b>→</b><span>2. Change DNS</span><b>→</b><span>3. Verify + activate</span><b>→</b><span>4. Map page</span></div>
+  </section>
+</div>
+
+{% if domains %}
+<div class="domain-stack">
+{% for domain in domains %}
+<section class="panel domain-card">
+  <div class="domain-card-head">
+    <div><div class="domain-title-line"><h2>{{ domain.domain }}</h2><span class="badge {{ 'success' if domain.status in ['active','verified'] else ('failed' if domain.status == 'provisioning_failed' else 'warning') }}">{{ domain.status|replace('_',' ') }}</span></div><p class="muted">{{ domain.routes_count }} mapped {{ 'route' if domain.routes_count == 1 else 'routes' }}</p></div>
+    <div class="actions">
+      <form method="post" action="{{ url_for('domain_verify', domain_id=domain.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary" type="submit">Verify & activate</button></form>
+      {% if domain.routes_count == 0 %}<form method="post" action="{{ url_for('domain_delete', domain_id=domain.id) }}" onsubmit="return confirm('Disconnect this domain?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="ghost-danger" type="submit">Disconnect</button></form>{% endif %}
+    </div>
+  </div>
+  <div class="domain-status-grid">
+    <div><span>Required A record</span><strong>{{ domain.expected_ip }}</strong></div>
+    <div><span>Currently resolves to</span><strong>{{ domain.resolved_ips|join(', ') if domain.resolved_ips else 'Not checked / no A record' }}</strong></div>
+    <div><span>Last checked</span><strong>{{ domain.last_checked_at|dt }}</strong></div>
+    <div><span>HTTPS</span><strong>{{ 'Active' if domain.tls_active else ('Not active' if domain.verified_at else 'Waiting for DNS') }}</strong></div>
+  </div>
+  {% if domain.status == 'active' %}
+  <div class="domain-ready-banner"><strong>Domain active</strong><span>Nginx routing and HTTPS are provisioned automatically. Map a published page to <code>/</code> or another path to serve content.</span></div>
+  {% elif domain.status == 'verified' %}
+  <div class="domain-ready-banner"><strong>DNS verified</strong><span>This record predates automatic activation or auto-provisioning is disabled. Click <b>Verify & activate</b> to provision the host when automatic provisioning is enabled.</span></div>
+  {% elif domain.status == 'provisioning_failed' %}
+  <div class="notice danger domain-provision-error"><strong>Activation failed</strong><span>{{ domain.provisioning_error or 'The host provisioning service returned an error.' }}</span></div>
+  {% elif domain.status == 'provisioning' %}
+  <div class="domain-pending-banner"><strong>Activating domain</strong><span>DNS passed. NJS is configuring Nginx and HTTPS.</span></div>
+  {% else %}
+  <div class="domain-pending-banner"><strong>Waiting for DNS</strong><span>Point the hostname to {{ domain.expected_ip }}, wait for propagation, then click <b>Verify & activate</b>.</span></div>
+  {% endif %}
+
+  <div class="route-section">
+    <div class="section-row"><div><strong>Page routes</strong><span>One page per unique path.</span></div><a href="{{ url_for('websites') }}#generate-page">Create page + route</a></div>
+    {% if domain.routes %}
+      <div class="route-list">
+      {% for route in domain.routes %}
+        <div class="route-row">
+          <div class="route-path"><code>{{ route.path }}</code><div><strong>{{ route.page_title or 'Website page' }}</strong><span>{{ route.public_url }}</span></div></div>
+          <div class="route-actions"><span class="badge">{{ route.status }}</span>{% if route.page_id %}<a class="secondary button-link small-button" href="{{ url_for('page_detail', page_id=route.page_id) }}">Manage</a>{% endif %}<form method="post" action="{{ url_for('domain_route_delete', route_id=route.id) }}" onsubmit="return confirm('Remove this route?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="icon-danger" type="submit" aria-label="Remove route">×</button></form></div>
+        </div>
+      {% endfor %}
+      </div>
+    {% else %}<div class="empty-callout compact"><strong>No page routes yet.</strong><span>Create a website page and select this domain to publish it here.</span></div>{% endif %}
+  </div>
+</section>
+{% endfor %}
+</div>
+{% else %}
+<div class="empty-callout big"><strong>No domains connected.</strong><span>Add the hostname you want visitors to use for your generated pages.</span></div>
+{% endif %}
+{% endblock %}

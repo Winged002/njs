@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Landing Page Studio · NJS{% endblock %}
+{% block content %}
+<div class="bonita-builder landing-studio-page">
+  <header class="builder-hero">
+    <div><div class="eyebrow">LANDING PAGE STUDIO</div><h1>Create pages with AI or by hand</h1><p>Both creation paths use the same NJS page model, publishing routes, revision history and website navigation.</p></div>
+    <div class="actions"><a class="secondary button-link" href="{{ url_for('websites') }}">Website manager</a></div>
+  </header>
+
+  <div class="detail-metric-strip">
+    <div><span>Total pages</span><strong>{{ counts.total }}</strong></div>
+    <div><span>Published</span><strong>{{ counts.published }}</strong></div>
+    <div><span>AI-generated</span><strong>{{ counts.ai }}</strong></div>
+    <div><span>Manual</span><strong>{{ counts.manual }}</strong></div>
+  </div>
+
+  <div class="builder-layout">
+    <main class="builder-primary">
+      <section class="builder-card">
+        <div class="builder-section-head"><span class="builder-index">01</span><div><h2>Manual page</h2><p>Start from a clean responsive page and edit the HTML yourself. AI remains optional later.</p></div></div>
+        <form method="post" action="{{ url_for('landing_page_manual_create') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="builder-fields two-up">
+            <label>Page title<input name="title" maxlength="300" required placeholder="Product launch"></label>
+            <label>Page type<select name="page_kind"><option value="custom">Custom</option><option value="home">Home</option><option value="services">Services</option><option value="about">About</option><option value="contact">Contact</option><option value="resources">Resources</option><option value="news">News</option></select></label>
+            <label class="span-two">Headline<input name="headline" maxlength="500" placeholder="A clear promise for the visitor"></label>
+            <label class="span-two">Subheadline<input name="subheadline" maxlength="1200" placeholder="One sentence that explains the value"></label>
+            <label class="span-two">Starter body<textarea name="body" rows="4" placeholder="Add a short introduction. You can edit the full HTML after creation."></textarea></label>
+            <label>CTA label<input name="cta_label" value="Learn more"></label>
+            <label>CTA URL<input name="cta_url" value="#"></label>
+            <label>Publishing location<select name="domain_id" data-manual-domain><option value="">Internal NJS page</option>{% for domain in domains %}<option value="{{ domain._id }}">{{ domain.domain }}</option>{% endfor %}</select></label>
+            <label>Domain path<input name="path" value="/" placeholder="/launch"></label>
+            <label class="span-two"><span>Article slot</span><span class="check-row"><input type="checkbox" name="include_articles" value="1"> Include dynamic NJS article cards</span></label>
+          </div>
+          <div class="detail-save-bar"><div><strong>Create manual page</strong><span>No AI call is made.</span></div><button class="primary" type="submit">Create page</button></div>
+        </form>
+      </section>
+
+      <section class="builder-card">
+        <div class="builder-section-head"><span class="builder-index">02</span><div><h2>AI-assisted page</h2><p>Generate from an existing campaign, then keep revising with AI or take over manually in the editor.</p></div></div>
+        <form method="post" action="{{ url_for('landing_page_ai_create') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="builder-fields two-up">
+            <label>Campaign<select name="campaign_id" required><option value="">Choose campaign</option>{% for campaign in campaigns %}<option value="{{ campaign._id }}">{{ campaign.title }}</option>{% endfor %}</select></label>
+            <label>Page type<select name="page_kind"><option value="home">Home / landing</option><option value="services">Services</option><option value="about">About</option><option value="contact">Contact</option><option value="resources">Resources</option><option value="news">News</option><option value="custom">Custom</option></select></label>
+            <label class="span-two">Page title<input name="title" maxlength="300" required placeholder="AI-generated campaign page"></label>
+            <label class="span-two">AI direction <span class="optional-pill">Optional</span><textarea name="prompt" rows="4" maxlength="4000" placeholder="Describe the page goal, audience emphasis or layout direction."></textarea></label>
+            <label>Publishing location<select name="domain_id"><option value="">Internal NJS page</option>{% for domain in domains %}<option value="{{ domain._id }}">{{ domain.domain }}</option>{% endfor %}</select></label>
+            <label>Domain path<input name="path" value="/" placeholder="/campaign"></label>
+            <label class="span-two"><span>Article slot</span><span class="check-row"><input type="checkbox" name="include_articles" value="1" checked> Include campaign articles</span></label>
+          </div>
+          <div class="detail-save-bar"><div><strong>Generate with AI</strong><span>Queues the existing NJS landing-page worker.</span></div><button class="primary" type="submit" {% if not campaigns %}disabled{% endif %}>Generate page</button></div>
+        </form>
+      </section>
+    </main>
+
+    <aside class="builder-side">
+      <section class="builder-summary-card">
+        <div class="summary-kicker">WORKFLOW</div><h2>One page model</h2>
+        <p>Manual and AI pages are interchangeable after creation.</p>
+        <div class="summary-facts"><div><span>Create</span><strong>Manual or AI</strong></div><div><span>Edit</span><strong>HTML + AI revisions</strong></div><div><span>Ship</span><strong>Preview → publish</strong></div></div>
+      </section>
+    </aside>
+  </div>
+
+  <section class="panel" style="margin-top:24px">
+    <div class="panel-head"><div><h2>Landing pages</h2><p class="muted">All manual and AI-created pages in this organization.</p></div><span class="count-pill">{{ pages|length }}</span></div>
+    {% if pages %}
+    <div class="list">
+      {% for page in pages %}
+      <a class="row-link" href="{{ url_for('landing_page_editor', page_id=page._id) }}">
+        <div><strong>{{ page.title or 'Untitled page' }}</strong><div class="muted small">Revision {{ page.revision or 0 }} · {{ page.updated_at|dt }} · {{ 'manual' if page.manual_mode else 'AI' }}</div></div>
+        <span class="badge">{{ 'published' if page.published else (page.generation_status or 'draft') }}</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}<div class="empty-callout"><strong>No landing pages yet.</strong><span>Create one manually or generate one from a campaign.</span></div>{% endif %}
+  </section>
+</div>
+{% endblock %}

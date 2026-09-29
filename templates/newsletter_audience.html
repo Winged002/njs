@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}Newsletter audience · Newsjacking{% endblock %}
+{% block workspace_context %}<span>/</span><strong>Audience</strong>{% endblock %}
+{% block content %}
+<div class="newsletter-page newsletter-audience-page">
+  <div class="page-head">
+    <div><div class="eyebrow">Newsletters</div><h1>Audience</h1><p>Build a dynamic newsletter audience from engagement and interests, then optionally add BlackBook segments or individual contacts. Eligibility and suppression remain controlled by BlackBook.</p></div>
+    {% if selected_schedule %}<a class="secondary button-link" href="{{ url_for('newsletter_manage') }}">Back to Build</a>{% endif %}
+  </div>
+
+  {% if not schedules %}
+    <div class="empty-callout"><strong>Create a newsletter plan first.</strong><span>Audience targeting is attached to a newsletter plan.</span><a class="primary button-link" href="{{ url_for('newsletter_create') }}">Create plan</a></div>
+  {% else %}
+    <section class="newsletter-context-bar">
+      <form method="get" class="newsletter-plan-switcher"><label>Newsletter plan</label><select name="schedule" onchange="this.form.submit()">{% for s in schedules %}<option value="{{ s._id }}" {{ 'selected' if selected_schedule and s._id == selected_schedule._id else '' }}>{{ s.name }}</option>{% endfor %}</select></form>
+      <span class="connection-pill {{ 'online' if blackbook.connected else 'offline' }}"><span></span>{{ 'BlackBook connected' if blackbook.connected else 'BlackBook unavailable' }}</span>
+    </section>
+
+    {% if not blackbook.connected %}
+      <div class="empty-callout newsletter-connection-empty"><strong>Connect BlackBook to unlock audience intelligence.</strong><span>{{ blackbook.error }}</span><a class="primary button-link" href="{{ url_for('blackbook_integration') }}">Configure BlackBook integration</a></div>
+    {% else %}
+      {% set context = blackbook.context or {} %}{% set counts = context.counts or {} %}{% set preview = blackbook.preview or {} %}
+      {% set engagement = blackbook.engagement or {} %}{% set engagement_counts = engagement.counts or {} %}
+      {% set selected_buckets = selected_schedule.blackbook_engagement_buckets or [] %}
+      {% set selected_interests = selected_schedule.blackbook_interest_ids or [] %}
+      {% set interest_match = selected_schedule.blackbook_interest_match or 'any' %}
+      <div class="detail-metric-strip newsletter-metric-strip audience-metric-strip">
+        <div><span>Directory</span><strong>{{ counts.people or 0 }}</strong><small>BlackBook people</small></div>
+        <div><span>Eligible</span><strong>{{ counts.eligible or 0 }}</strong><small>Marketing eligible</small></div>
+        <div><span>Analyzed</span><strong>{{ counts.analyzed or 0 }}</strong><small>Behavior profiles</small></div>
+        <div><span>Interests</span><strong>{{ engagement.interest_count or (blackbook.interests|length) }}</strong><small>Canonical topics</small></div>
+      </div>
+
+      <form id="newsletter-directory-search" method="get" action="{{ url_for('newsletter_audience') }}"></form>
+      <form method="post" class="detail-workspace newsletter-audience-workspace" data-audience-builder data-preview-url="{{ url_for('newsletter_audience_live_preview') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="schedule_id" value="{{ selected_schedule._id }}">
+        <main class="detail-main">
+          <section class="builder-card smart-audience-card">
+            <div class="builder-section-head"><span class="builder-index">01</span><div><h2>Smart audience</h2><p>Choose engagement levels and interests. Buckets combine with OR; interests are then matched with your ANY/ALL rule.</p></div></div>
+
+            {% if blackbook.engagement_error %}
+              <div class="inline-notice warning"><strong>Engagement Intelligence is unavailable.</strong><span>{{ blackbook.engagement_error }}</span></div>
+            {% else %}
+              <div class="smart-audience-subhead"><div><strong>Engagement buckets</strong><small>Select one or more levels.</small></div><a href="{{ url_for('newsletter_engagement') }}" class="text-link">Open Engagement Intelligence</a></div>
+              <div class="engagement-bucket-grid">
+                {% set bucket_meta = [
+                  ('high','High','Most engaged','Recent opens/clicks and the strongest activity'),
+                  ('medium','Medium','Regularly engaged','Meaningful activity, but less consistently'),
+                  ('low','Low','Lightly engaged','Occasional engagement or weak recent signals'),
+                  ('inactive','Inactive','No engagement','Known contacts with no measured engagement')
+                ] %}
+                {% for key, label, subtitle, description in bucket_meta %}
+                  <label class="engagement-bucket-card bucket-{{ key }}">
+                    <input type="checkbox" name="engagement_buckets" value="{{ key }}" data-targeting-input {{ 'checked' if key in selected_buckets else '' }}>
+                    <span class="bucket-card-check">✓</span><span class="bucket-card-copy"><small>{{ subtitle }}</small><strong>{{ label }}</strong><p>{{ description }}</p></span><b>{{ engagement_counts[key] or 0 }}</b>
+                  </label>
+                {% endfor %}
+              </div>
+
+              <div class="smart-audience-divider"></div>
+              <div class="smart-audience-subhead interest-subhead">
+                <div><strong>Canonical interests</strong><small>Select topics inferred from Mailchimp engagement.</small></div>
+                <div class="interest-match-control" role="group" aria-label="Interest matching">
+                  <label><input type="radio" name="interest_match" value="any" data-targeting-input {{ 'checked' if interest_match != 'all' else '' }}><span>Any</span></label>
+                  <label><input type="radio" name="interest_match" value="all" data-targeting-input {{ 'checked' if interest_match == 'all' else '' }}><span>All</span></label>
+                </div>
+              </div>
+              <div class="interest-picker-toolbar"><input type="search" placeholder="Search interests…" data-interest-search autocomplete="off"><span><b data-interest-selected-count>{{ selected_interests|length }}</b> selected</span></div>
+              <div class="interest-picker" data-interest-picker>
+                {% for interest in blackbook.interests %}
+                  <label class="interest-select-card" data-interest-card data-interest-name="{{ (interest.name or '')|lower }}">
+                    <input type="checkbox" name="interest_ids" value="{{ interest.id }}" data-targeting-input {{ 'checked' if interest.id in selected_interests else '' }}>
+                    <span class="interest-check">✓</span>
+                    <span class="interest-copy"><strong>{{ interest.name }}</strong><small>{{ interest.person_count or 0 }} people · avg score {{ interest.average_score or 0 }}</small></span>
+                    <span class="interest-buckets" title="High / Medium / Low / Inactive"><i>H {{ (interest.buckets or {}).high or 0 }}</i><i>M {{ (interest.buckets or {}).medium or 0 }}</i><i>L {{ (interest.buckets or {}).low or 0 }}</i><i>I {{ (interest.buckets or {}).inactive or 0 }}</i></span>
+                  </label>
+                {% else %}
+                  <div class="empty-callout compact"><strong>No canonical interests yet.</strong><span>Run Engagement Intelligence analysis first; inferred interests will appear here automatically.</span></div>
+                {% endfor %}
+              </div>
+              <div class="audience-rule-summary" data-rule-summary><span>Current rule</span><strong data-rule-text>Choose an engagement bucket, an interest, or both.</strong><small>Smart Audience is resolved again at delivery, so it follows the latest BlackBook intelligence.</small></div>
+            {% endif %}
+          </section>
+
+          <section class="builder-card">
+            <div class="builder-section-head"><span class="builder-index">02</span><div><h2>Additional sources</h2><p>Add reusable BlackBook segments, or use the entire eligible directory instead.</p></div></div>
+            <label class="newsletter-choice-row newsletter-all-eligible-row"><input type="checkbox" name="include_all_eligible" data-all-eligible {{ 'checked' if selected_schedule.blackbook_include_all_eligible else '' }}><span><strong>All eligible BlackBook contacts</strong><small>This is an exclusive shortcut. When enabled, Smart Audience, segments and individual selections are ignored and cleared on save.</small></span></label>
+            <div class="segment-card-grid newsletter-segment-grid">{% for segment in blackbook.segments %}<label class="segment-select-card"><input type="checkbox" name="segment_ids" value="{{ segment.id }}" data-targeting-input {{ 'checked' if segment.id in (selected_schedule.blackbook_segment_ids or []) else '' }}><div><span class="segment-count">{{ segment.count }}</span><strong>{{ segment.name }}</strong><p>{{ segment.description or 'BlackBook target segment' }}</p><small>{% if segment.mailchimp_tag %}Mailchimp tag ready{% else %}BlackBook segment{% endif %}</small></div></label>{% else %}<div class="empty-callout compact"><strong>No BlackBook segments yet.</strong><span>You can build the audience entirely from engagement and interests.</span></div>{% endfor %}</div>
+          </section>
+
+          <section class="builder-card">
+            <div class="builder-section-head"><span class="builder-index">03</span><div><h2>Specific people</h2><p>Add named contacts on top of Smart Audience and selected segments.</p></div></div>
+            <div class="newsletter-directory-toolbar"><input type="hidden" name="schedule" value="{{ selected_schedule._id }}" form="newsletter-directory-search"><input name="q" value="{{ people_query }}" placeholder="Search name, company, role, tag or audience category" form="newsletter-directory-search"><button class="secondary" type="submit" form="newsletter-directory-search">Search</button>{% if people_query %}<a class="quiet button-link" href="{{ url_for('newsletter_audience', schedule=selected_schedule._id) }}">Clear</a>{% endif %}</div>
+            <div class="newsletter-people-list">{% for person in blackbook.people %}<label class="newsletter-person-row"><input type="checkbox" name="person_ids" value="{{ person.id }}" data-targeting-input {{ 'checked' if person.id in (selected_schedule.blackbook_person_ids or []) else '' }}><span class="person-avatar">{{ (person.name or '?')[:1]|upper }}</span><span class="newsletter-person-copy"><strong>{{ person.name }}</strong><small>{{ person.role or 'Contact' }}{% if person.organization %} · {{ person.organization }}{% endif %}</small></span><span class="newsletter-person-score"><small>Relationship</small><strong>{{ person.relationship_strength or 0 }}</strong></span></label>{% else %}<div class="side-empty">No people matched this search.</div>{% endfor %}</div>
+          </section>
+
+          <div class="detail-save-bar newsletter-save-bar"><div><strong>Save dynamic audience</strong><span>Eligibility and the Smart Audience rule are revalidated before Mailchimp delivery.</span></div><button class="primary" type="submit">Save audience</button></div>
+        </main>
+
+        <aside class="detail-side">
+          <section class="side-card audience-live-preview">
+            <div class="side-card-head"><div><span class="summary-kicker">LIVE AUDIENCE PREVIEW</span><h3><span data-preview-eligible>{{ (preview.counts or {}).eligible or 0 }}</span> eligible recipients</h3></div><span class="preview-sync-dot" data-preview-state title="Preview synced"></span></div>
+            <div class="summary-facts newsletter-summary-facts"><div><span>Selected</span><strong data-preview-selected>{{ (preview.counts or {}).selected or 0 }}</strong></div><div><span>Subscribed</span><strong data-preview-subscribed>{{ (preview.counts or {}).subscribed or 0 }}</strong></div><div><span>Analyzed</span><strong data-preview-analyzed>{{ (preview.counts or {}).analyzed or 0 }}</strong></div><div><span>Avg. relationship</span><strong data-preview-relationship>{{ preview.average_relationship_strength or 0 }}</strong></div></div>
+            <div class="preview-engagement-breakdown" data-preview-engagement>
+              {% set pd = preview.engagement_distribution or {} %}
+              <span><b>{{ pd.high or 0 }}</b> High</span><span><b>{{ pd.medium or 0 }}</b> Medium</span><span><b>{{ pd.low or 0 }}</b> Low</span><span><b>{{ pd.inactive or 0 }}</b> Inactive</span>
+            </div>
+            <div class="audience-category-cloud newsletter-category-cloud" data-preview-categories>{% for c in preview.categories[:10] %}<span>{{ c.name }} <b>{{ c.count }}</b></span>{% endfor %}</div>
+            {% if blackbook.preview_error %}<div class="preview-error" data-preview-error>{{ blackbook.preview_error }}</div>{% else %}<div class="preview-error" data-preview-error hidden></div>{% endif %}
+          </section>
+          <section class="side-card">
+            <div class="side-card-head"><div><span class="summary-kicker">HOW MATCHING WORKS</span><h3>Predictable audience logic</h3></div></div>
+            <div class="audience-logic-list"><div><span>1</span><p><strong>Within engagement:</strong> selected buckets use OR.</p></div><div><span>2</span><p><strong>Within interests:</strong> choose ANY or ALL.</p></div><div><span>3</span><p><strong>Smart rule:</strong> engagement AND interest when both are selected.</p></div><div><span>4</span><p><strong>Other sources:</strong> segments and named people are added with OR.</p></div><div><span>5</span><p><strong>Final gate:</strong> BlackBook removes ineligible/suppressed recipients.</p></div></div>
+          </section>
+          <section class="side-card">
+            <div class="side-card-head"><div><span class="summary-kicker">RECENT CAMPAIGNS</span><h3>What this audience has seen</h3></div></div>
+            <div class="newsletter-signal-list">{% for c in blackbook.campaigns[:5] %}<div><strong>{{ c.subject or c.title }}</strong><small>{{ c.emails_sent or 0 }} sent · {{ c.unique_opens or 0 }} opens · {{ c.unique_clicks or 0 }} clicks</small></div>{% else %}<div class="side-empty">No imported Mailchimp campaign history yet.</div>{% endfor %}</div>
+          </section>
+        </aside>
+      </form>
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  const form = document.querySelector('[data-audience-builder]');
+  if (!form) return;
+  const interestSearch = form.querySelector('[data-interest-search]');
+  const interestCards = [...form.querySelectorAll('[data-interest-card]')];
+  const allEligible = form.querySelector('[data-all-eligible]');
+  const targetingInputs = [...form.querySelectorAll('[data-targeting-input]')];
+  const ruleText = form.querySelector('[data-rule-text]');
+  const selectedCount = form.querySelector('[data-interest-selected-count]');
+  const previewState = form.querySelector('[data-preview-state]');
+  const previewError = form.querySelector('[data-preview-error]');
+  let timer = null;
+  let controller = null;
+
+  const checkedValues = name => [...form.querySelectorAll(`[name="${name}"]:checked`)].map(el => el.value);
+  const selectedInterestNames = () => interestCards.filter(card => card.querySelector('input:checked')).map(card => card.querySelector('strong')?.textContent.trim()).filter(Boolean);
+
+  function updateRuleSummary() {
+    const buckets = checkedValues('engagement_buckets').map(x => x.charAt(0).toUpperCase() + x.slice(1));
+    const interests = selectedInterestNames();
+    const match = form.querySelector('[name="interest_match"]:checked')?.value === 'all' ? ' AND ' : ' OR ';
+    if (selectedCount) selectedCount.textContent = String(interests.length);
+    if (!ruleText) return;
+    if (allEligible?.checked) { ruleText.textContent = 'All eligible BlackBook contacts'; return; }
+    const bucketRule = buckets.length ? `(${buckets.join(' OR ')})` : '';
+    const interestRule = interests.length ? `(${interests.slice(0, 5).join(match)}${interests.length > 5 ? ` +${interests.length - 5} more` : ''})` : '';
+    ruleText.textContent = bucketRule && interestRule ? `${bucketRule} AND ${interestRule}` : (bucketRule || interestRule || 'Choose an engagement bucket, an interest, or both.');
+  }
+
+  function syncAllEligible() {
+    const disabled = !!allEligible?.checked;
+    targetingInputs.forEach(input => { input.disabled = disabled; });
+    form.classList.toggle('all-eligible-active', disabled);
+    updateRuleSummary();
+  }
+
+  function setText(selector, value) {
+    const el = form.querySelector(selector); if (el) el.textContent = String(value ?? 0);
+  }
+
+  function renderPreview(preview) {
+    const counts = preview.counts || {};
+    setText('[data-preview-eligible]', counts.eligible || 0);
+    setText('[data-preview-selected]', counts.selected || 0);
+    setText('[data-preview-subscribed]', counts.subscribed || 0);
+    setText('[data-preview-analyzed]', counts.analyzed || 0);
+    setText('[data-preview-relationship]', preview.average_relationship_strength || 0);
+    const dist = preview.engagement_distribution || {};
+    const engagement = form.querySelector('[data-preview-engagement]');
+    if (engagement) engagement.innerHTML = `<span><b>${dist.high || 0}</b> High</span><span><b>${dist.medium || 0}</b> Medium</span><span><b>${dist.low || 0}</b> Low</span><span><b>${dist.inactive || 0}</b> Inactive</span>`;
+    const categories = form.querySelector('[data-preview-categories]');
+    if (categories) {
+      categories.innerHTML = '';
+      (preview.categories || []).slice(0, 10).forEach(row => {
+        const span = document.createElement('span'); span.append(document.createTextNode(`${row.name || 'Unclassified'} `));
+        const b = document.createElement('b'); b.textContent = row.count || 0; span.append(b); categories.append(span);
+      });
+    }
+  }
+
+  async function refreshPreview() {
+    if (!form.dataset.previewUrl) return;
+    controller?.abort(); controller = new AbortController();
+    if (previewState) previewState.classList.add('is-loading');
+    if (previewError) { previewError.hidden = true; previewError.textContent = ''; }
+    try {
+      const payload = new FormData(form);
+      const response = await fetch(form.dataset.previewUrl, {method: 'POST', body: payload, credentials: 'same-origin', signal: controller.signal, headers: {'X-Requested-With': 'XMLHttpRequest'}});
+      const body = await response.json();
+      if (!response.ok || !body.ok) throw new Error(body.error || 'Preview failed');
+      renderPreview(body.preview || {});
+      if (previewState) previewState.classList.add('is-success');
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      if (previewError) { previewError.hidden = false; previewError.textContent = err.message || 'Could not refresh audience preview.'; }
+      if (previewState) previewState.classList.add('is-error');
+    } finally {
+      if (previewState) setTimeout(() => previewState.classList.remove('is-loading','is-success','is-error'), 350);
+    }
+  }
+
+  function schedulePreview() { clearTimeout(timer); timer = setTimeout(refreshPreview, 420); }
+
+  if (interestSearch) interestSearch.addEventListener('input', () => {
+    const q = interestSearch.value.trim().toLowerCase();
+    interestCards.forEach(card => { card.hidden = !!q && !card.dataset.interestName.includes(q); });
+  });
+  allEligible?.addEventListener('change', () => { syncAllEligible(); schedulePreview(); });
+  form.addEventListener('change', event => {
+    if (event.target.matches('input[type="checkbox"], input[type="radio"]')) { updateRuleSummary(); schedulePreview(); }
+  });
+  syncAllEligible(); updateRuleSummary();
+})();
+</script>
+{% endblock %}

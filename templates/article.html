@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}{{ article.metadata.title if article.metadata else 'Article' }} · Review{% endblock %}
+{% block content %}
+<section class="article-review-shell" data-live-watch data-live-scope="article" data-live-id="{{ article._id }}">
+<div class="page-head article-review-head">
+  <div><div class="eyebrow">ARTICLE REVIEW · REVISION {{ article.revision or 1 }}</div><h1>{{ article.metadata.title if article.metadata else 'Untitled article' }}</h1><p>{% if campaign %}{{ campaign.title }} · {% endif %}Current state: {{ (article.review_status or 'pending_review')|replace('_',' ') }}</p></div>
+  <div class="actions">
+    <a class="secondary button-link" href="{{ url_for('article_review_queue') }}">Review queue</a>
+    {% if public_available %}<a class="secondary button-link" target="_blank" href="{{ url_for('public_article', article_id=article._id) }}">Open signed article ↗</a>{% endif %}
+    {% if public_available %}<a class="secondary button-link" href="{{ url_for('experiment_new', target='article:' ~ article._id) }}">Create experiment</a>{% endif %}
+    {% if selected_version.is_current %}
+      {% if (article.review_status != 'signed') or ((article.published_revision or 0) != (article.revision or 0)) %}
+        {% if can_sign %}<form method="post" action="{{ url_for('article_sign', article_id=article._id) }}" onsubmit="return confirm('Sign revision {{ article.revision or 1 }} and make it the public article?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="primary" type="submit">Sign revision {{ article.revision or 1 }} & publish</button></form>
+        {% elif not author_profile.completed %}<a class="primary button-link" href="{{ url_for('author_profile_settings', next=url_for('article_detail', article_id=article._id)) }}">Complete profile to sign</a>
+        {% else %}<span class="badge warning">Article organization required</span>{% endif %}
+      {% else %}<span class="badge signed">Signed & public</span>{% endif %}
+    {% endif %}
+  </div>
+</div>
+
+{% if article.published_revision and (article.published_revision or 0) != (article.revision or 0) %}
+<div class="notice info publication-snapshot-notice"><strong>Revision {{ article.published_revision }} remains public.</strong><span>The current revision {{ article.revision }} is private until someone in {{ current_user.organization_name or 'this organization' }} signs it.</span></div>
+{% elif not public_available %}
+<div class="notice warning publication-snapshot-notice"><strong>This article is not public.</strong><span>It will become available on NJS and mapped websites only after the current revision is signed.</span></div>
+{% endif %}
+{% set media_status = (article.metadata or {}).get('media_status') or {} %}
+{% if media_status.openai == 'failed' %}<div class="notice warning"><strong>OpenAI article image generation failed.</strong><span>{{ media_status.error or 'No image was returned.' }}{% if (article.metadata or {}).get('hero_image') %} A real fallback image is being used from {{ media_status.hero_source or 'available evidence' }}.{% endif %}</span></div>{% elif media_status.openai == 'not_configured' %}<div class="notice warning"><strong>OpenAI article images are not configured.</strong><span>Add OPENAI_API_KEY to the NJS deployment environment. {% if (article.metadata or {}).get('hero_image') %}A fallback image is being used from {{ media_status.hero_source or 'available evidence' }}.{% endif %}</span></div>{% endif %}
+
+<div class="version-tabs" role="tablist" aria-label="Article versions">
+  {% for version in versions %}
+  <a class="version-tab {{ 'is-active' if version.key == selected_version_key else '' }}" href="{{ url_for('article_detail', article_id=article._id, version=version.key) }}"><span>{{ 'Current' if version.is_current else 'Revision ' ~ version.revision }}</span><small>{{ version.created_at|dt }}</small></a>
+  {% endfor %}
+</div>
+
+<div class="website-review-grid article-review-grid">
+  <section class="website-browser panel article-browser">
+    <div class="browser-chrome"><div class="browser-dots"><i></i><i></i><i></i></div><div class="browser-address">{{ internal_website_host }}/public/articles/{{ article._id }} · review revision {{ selected_version.revision }}</div><a target="_blank" href="{{ url_for('article_preview', article_id=article._id, version=selected_version_key) }}">Open preview ↗</a></div>
+    <iframe class="website-frame article-review-frame" title="Article revision preview" src="{{ url_for('article_preview', article_id=article._id, version=selected_version_key) }}"></iframe>
+  </section>
+  <aside class="review-notes panel article-review-notes">
+    <div class="panel-head"><div><h2>Review notes</h2><p class="muted">Notes stay attached to article revision {{ selected_version.revision }}.</p></div>{% if selected_version.quality %}<span class="badge">Q{{ selected_version.quality.score }}</span>{% endif %}</div>
+    <form method="post" action="{{ url_for('article_save_notes', article_id=article._id) }}" class="review-notes-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="version" value="{{ selected_version_key }}"><input type="hidden" name="return_to" value="{{ request.full_path.rstrip('?') }}">
+      <textarea name="notes" rows="14" placeholder="Example: Shorten the opening, make the Bulgarian dealer implications more specific, change the headline, and remove the final promotional paragraph.">{{ selected_notes }}</textarea>
+      <div class="review-actions"><button class="secondary" type="submit">Save notes</button><button class="primary" type="submit" formaction="{{ url_for('article_request_changes', article_id=article._id) }}">Request AI changes</button></div>
+    </form>
+    <div class="review-help"><strong>Revision-safe review</strong><span>AI changes are based on the exact version selected above and create a new unsigned current revision. A previously signed public revision stays live until the newer revision is signed.</span></div>
+    {% if not selected_version.is_current %}<form method="post" action="{{ url_for('article_restore_version', article_id=article._id, version_id=selected_version.id) }}" class="restore-article-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary" type="submit">Restore revision {{ selected_version.revision }} as new current</button></form>{% endif %}
+    <hr>
+    <div class="author-signing-card">
+      {% if author_profile.completed %}<img src="{{ author_profile.image_url }}" alt="{{ author_profile.full_name }}"><div><span class="eyebrow">YOUR SIGNING IDENTITY</span><strong>{{ author_profile.full_name }}</strong><small>{{ current_user.organization_name or current_user.syntal_org_id or 'Current organization' }}</small></div>
+      {% else %}<div class="author-avatar-placeholder small">?</div><div><span class="eyebrow">SIGNING LOCKED</span><strong>Author profile incomplete</strong><small>Add a full name and picture before signing.</small><a href="{{ url_for('author_profile_settings', next=url_for('article_detail', article_id=article._id)) }}">Complete profile →</a></div>{% endif %}
+    </div>
+    {% if change_jobs %}<hr><details class="inspector-details"><summary>Recent change jobs</summary><div class="revision-job-list">{% for job in change_jobs %}<div><strong>{{ job.status }}</strong><span>from r{{ job.base_revision }}{% if job.result_revision %} → r{{ job.result_revision }}{% endif %} · {{ job.created_at|dt }}</span></div>{% endfor %}</div></details>{% endif %}
+  </aside>
+</div>
+</section>
+
+<div class="two-col article-context-grid section-gap">
+<section class="panel">
+  <div class="panel-head"><div><h2>Editorial context</h2><p class="muted">Source and generation context for the current article.</p></div><span class="badge">r{{ article.revision or 1 }}</span></div>
+  <dl class="details">
+    <div><dt>Campaign</dt><dd>{{ campaign.title if campaign else '—' }}</dd></div><div><dt>Worker</dt><dd>{% if article_worker %}<a href="{{ url_for('newsjacking_worker_detail', worker_id=article_worker._id) }}">{{ article_worker.name }}</a>{% else %}Legacy / manual{% endif %}</dd></div>{% if article.newsjacking_worker_id %}<div><dt>Learning at match</dt><dd>{{ (article.learning_mode or 'observe')|capitalize }}{% if (article.learning_settings or {}).adjustment %} · {{ '%+.3f'|format((article.learning_settings or {}).adjustment) }} threshold adjustment{% endif %}{% if article_worker %} · <a href="{{ url_for('newsjacking_worker_learning', worker_id=article_worker._id) }}">report</a>{% endif %}</dd></div>{% endif %}<div><dt>Products</dt><dd>{% if article_products %}{% for product in article_products %}<a href="{{ url_for('product_detail', product_id=product._id) }}">{{ product.name }}</a>{{ ', ' if not loop.last else '' }}{% endfor %}{% else %}—{% endif %}</dd></div><div><dt>Created</dt><dd>{{ article.created_at|dt }}</dd></div><div><dt>Current review</dt><dd>{{ (article.review_status or 'pending_review')|replace('_',' ') }}</dd></div><div><dt>Public revision</dt><dd>{{ article.published_revision or 'None' }}</dd></div>{% if article.quality %}<div><dt>Quality audit</dt><dd>{{ article.quality.score }}/100 · {{ article.quality.word_count }} words</dd></div>{% endif %}
+  </dl>
+  {% if hook %}<hr><h3>News hook</h3><p><strong>{{ hook.title }}</strong></p><p class="muted">{{ hook.match_reason }}</p>{% if hook.source_url %}<p><a target="_blank" href="{{ hook.source_url }}">Original source ↗</a></p>{% endif %}{% endif %}
+  {% if article_products %}<hr><h3>Product integration</h3><p class="muted">These products were selected by the Worker matcher as contextually relevant to this specific story.</p><div class="article-product-links">{% for product in article_products %}<a href="{{ url_for('product_detail', product_id=product._id) }}"><strong>{{ product.name }}</strong><span>{{ product.cta_label or 'Learn more' }} · {{ product.product_url }}</span></a>{% endfor %}</div>{% endif %}
+</section>
+<section class="panel">
+  <div class="panel-head"><h2>Publication signature</h2>{% if article.publication %}<span class="badge signed">Signed r{{ article.publication.revision }}</span>{% else %}<span class="badge">Unsigned</span>{% endif %}</div>
+  {% if article.publication and article.publication.author %}<div class="publication-signature-card"><img src="{{ article.publication.author.image_url }}" alt="{{ article.publication.author.full_name }}"><div><strong>{{ article.publication.author.full_name }}</strong><span>Signed {{ article.publication.signed_at|dt }}</span><small>Revision {{ article.publication.revision }} · approval {{ article.publication.signature_id }}</small></div></div>{% else %}<div class="empty-callout"><strong>No publication signature yet.</strong><span>The current article remains private until an eligible organization member signs it.</span></div>{% endif %}
+</section>
+</div>
+
+<section class="panel audience-capture-panel section-gap" id="audience-capture">
+  <div class="panel-head"><div><h2>Audience capture</h2><p class="muted">Choose whether this public article collects email addresses, survey responses, or both.</p></div><div class="actions"><span class="badge {{ 'signed' if blackbook_connector.configured else 'warning' }}">BlackBook {{ 'connected' if blackbook_connector.configured else 'not connected' }}</span><a class="secondary button-link" href="{{ url_for('blackbook_integration') }}">Integration settings</a></div></div>
+  <form method="post" action="{{ url_for('article_engagement_settings', article_id=article._id) }}" class="audience-config-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="audience-toggle-grid">
+      <label class="feature-toggle"><input type="checkbox" name="email_capture_enabled" {{ 'checked' if engagement.email_capture_enabled else '' }}><span><strong>Email collection</strong><small>Ask readers for an email address after the article.</small></span></label>
+      <label class="feature-toggle"><input type="checkbox" name="survey_enabled" {{ 'checked' if engagement.survey_enabled else '' }}><span><strong>Survey</strong><small>Collect structured feedback connected to the article.</small></span></label>
+      <label class="feature-toggle"><input type="checkbox" name="blackbook_sync_enabled" {{ 'checked' if engagement.blackbook_sync_enabled else '' }}><span><strong>Sync to BlackBook</strong><small>Send identified responses into the organization's CRM.</small></span></label>
+      <label class="feature-toggle"><input type="checkbox" name="mailchimp_opt_in_enabled" {{ 'checked' if engagement.mailchimp_opt_in_enabled else '' }}><span><strong>Mailchimp opt-in</strong><small>Require explicit marketing consent before BlackBook can sync the contact to Mailchimp.</small></span></label>
+    </div>
+    <div class="form-grid two audience-copy-grid">
+      <label><span>Email block title</span><input name="email_title" value="{{ engagement.email_title or 'Stay informed' }}" maxlength="180"></label>
+      <label><span>Submit button</span><input name="button_label" value="{{ engagement.button_label or ('Send response' if engagement.survey_enabled else 'Subscribe') }}" maxlength="80"></label>
+      <label class="span-two"><span>Email description</span><textarea name="email_description" rows="2">{{ engagement.email_description or 'Receive relevant updates related to this topic.' }}</textarea></label>
+      <label class="toggle-row span-two"><span><strong>Ask for full name</strong><small>Email remains the primary identity key used for BlackBook matching.</small></span><input type="checkbox" name="ask_name" {{ 'checked' if engagement.ask_name else '' }}></label>
+      <label><span>Survey title</span><input name="survey_title" value="{{ engagement.survey_title or 'Quick survey' }}" maxlength="180"></label>
+      <label><span>Survey intro</span><input name="survey_description" value="{{ engagement.survey_description or 'Tell us what you thought about this article.' }}" maxlength="800"></label>
+      <label class="span-two"><span>Marketing consent text</span><textarea name="consent_text" rows="3" placeholder="Required when Mailchimp opt-in is enabled.">{{ engagement.consent_text or '' }}</textarea></label>
+    </div>
+    <div class="survey-builder">
+      <div class="panel-head compact"><div><h3>Survey questions</h3><p class="muted">Up to eight questions. Choice options are comma or line separated.</p></div></div>
+      {% for i in range(1,9) %}
+        {% set ns = namespace(q=none) %}{% for candidate in engagement.survey_questions or [] %}{% if candidate.id == 'q' ~ i %}{% set ns.q = candidate %}{% endif %}{% endfor %}
+        <div class="survey-builder-row">
+          <span class="survey-number">{{ i }}</span>
+          <input name="survey_q{{ i }}_text" value="{{ ns.q.question if ns.q else '' }}" placeholder="Question {{ i }}">
+          <select name="survey_q{{ i }}_type"><option value="text" {{ 'selected' if not ns.q or ns.q.type == 'text' else '' }}>Short text</option><option value="textarea" {{ 'selected' if ns.q and ns.q.type == 'textarea' else '' }}>Long text</option><option value="rating" {{ 'selected' if ns.q and ns.q.type == 'rating' else '' }}>1–5 rating</option><option value="choice" {{ 'selected' if ns.q and ns.q.type == 'choice' else '' }}>Single choice</option></select>
+          <input name="survey_q{{ i }}_options" value="{{ (ns.q.options or [])|join(', ') if ns.q else '' }}" placeholder="Choice options">
+          <label class="required-check"><input type="checkbox" name="survey_q{{ i }}_required" {{ 'checked' if ns.q and ns.q.required else '' }}> Required</label>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="form-actions"><button class="primary" type="submit">Save audience capture</button>{% if public_available %}<a class="secondary button-link" target="_blank" href="{{ url_for('public_article', article_id=article._id) }}#audience-response">View public form ↗</a>{% endif %}</div>
+  </form>
+</section>
+
+<section class="panel audience-responses-panel section-gap" id="audience-responses">
+  <div class="panel-head"><div><h2>Audience responses</h2><p class="muted">Stored in NJS first; BlackBook delivery is asynchronous and retryable.</p></div><div class="actions"><a class="secondary button-link" href="{{ url_for('article_responses_export', article_id=article._id) }}">Export CSV</a></div></div>
+  <div class="metric-strip compact"><div><strong>{{ submission_stats.total }}</strong><span>Responses</span></div><div><strong>{{ submission_stats.emails }}</strong><span>Emails</span></div><div><strong>{{ submission_stats.surveys }}</strong><span>Surveys</span></div><div><strong>{{ submission_stats.synced }}</strong><span>BlackBook synced</span></div><div><strong>{{ submission_stats.sync_issues }}</strong><span>Sync issues</span></div></div>
+  {% if recent_submissions %}<div class="response-list">{% for row in recent_submissions %}<div class="response-row"><div class="response-person"><strong>{{ row.email or row.name or 'Anonymous survey response' }}</strong><span>{{ row.created_at|dt }} · {{ row.domain or 'internal' }}{% if row.survey %} · {{ row.survey|length }} survey answer{{ '' if row.survey|length == 1 else 's' }}{% endif %}</span></div><div class="response-flags">{% if (row.marketing_consent or {}).granted %}<span class="badge signed">Marketing consent</span>{% endif %}<span class="badge {{ (row.blackbook or {}).status or 'disabled' }}">{{ ((row.blackbook or {}).status or 'disabled')|replace('_',' ') }}</span>{% if (row.blackbook or {}).status in ['failed','not_configured'] and row.email %}<form method="post" action="{{ url_for('article_submission_retry_blackbook', article_id=article._id, submission_id=row._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="quiet" type="submit">Retry</button></form>{% endif %}</div></div>{% endfor %}</div>{% else %}<div class="empty-callout"><strong>No responses yet.</strong><span>Enable email capture or a survey above. Responses will appear here immediately after submission.</span></div>{% endif %}
+</section>
+
+<section class="panel article-social-panel section-gap">
+  <div class="panel-head"><div><h2>Social media bundle</h2><p class="muted">Generated social output remains separate from article publication approval.</p></div>{% if latest_social_job %}<span class="badge {{ latest_social_job.status }}">{{ latest_social_job.status }}</span>{% endif %}</div>
+  {% if not openai_images_configured %}<div class="notice warning"><strong>Image generation key missing.</strong> Add <code>OPENAI_API_KEY</code> to the deployment environment.</div>{% endif %}
+  <form method="post" action="{{ url_for('social_generate_article', article_id=article._id) }}" class="social-generate-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="from_article" value="1"><div class="platform-checks">{% for p in ['linkedin','x','facebook','instagram','threads','bluesky'] %}<label><input type="checkbox" name="platforms" value="{{ p }}" {{ 'checked' if p in ['linkedin','x'] else '' }}><span>{{ p|capitalize }}</span></label>{% endfor %}</div><div class="inline-option-row"><label><input type="checkbox" name="regenerate_text"> Regenerate existing copy</label><label><input type="checkbox" name="regenerate_image"> Regenerate shared image</label></div><div class="form-actions"><button class="primary" type="submit">{{ 'Regenerate social bundle' if social_posts else 'Generate social bundle' }}</button><a class="secondary button-link" href="{{ url_for('social_posts_view', campaign_id=campaign._id) if campaign else url_for('social_posts_view') }}">Open Social Studio</a></div></form>
+</section>
+{% endblock %}

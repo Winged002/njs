@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }} · Products{% endblock %}
+{% block content %}
+<div class="bonita-detail-page product-detail-page">
+  <header class="detail-hero">
+    <div class="detail-identity"><span class="detail-mark">P</span><div><div class="eyebrow">PRODUCT LIBRARY</div><h1>{{ product.name }}</h1><p>{{ product.tagline or 'Reusable product context for Newsjack Workers.' }}</p></div></div>
+    <div class="actions"><a class="secondary button-link" href="{{ product.product_url }}" target="_blank" rel="noopener">Open destination ↗</a><a class="primary button-link" href="{{ url_for('newsjacking_worker_new', product_id=product._id) }}">Use in worker</a></div>
+  </header>
+  <div class="detail-metric-strip"><div><span>Status</span><strong>{{ product.status|title }}</strong></div><div><span>Workers</span><strong>{{ workers|length }}</strong></div><div><span>Generated articles</span><strong>{{ articles|length }}</strong></div><div><span>Evidence</span><strong>{{ evidence|length }}</strong></div></div>
+
+  <form method="post" class="detail-workspace" data-evidence-form>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <main class="detail-main">
+      <section class="builder-card">
+        <div class="builder-section-head"><span class="builder-index">01</span><div><h2>Product essentials</h2><p>Changes affect future generation only. Historical articles keep the context used at generation time.</p></div></div>
+        <div class="builder-fields two-up">
+          <label>Product name<input name="name" value="{{ product.name }}" required></label><label>Status<select name="status"><option value="active" {{ 'selected' if product.status == 'active' else '' }}>Active</option><option value="draft" {{ 'selected' if product.status == 'draft' else '' }}>Draft</option><option value="paused" {{ 'selected' if product.status == 'paused' else '' }}>Paused</option></select></label>
+          <label class="span-two">Tagline<input name="tagline" value="{{ product.tagline or '' }}"></label><label>Product link<input type="url" name="product_url" value="{{ product.product_url or '' }}" required></label><label>CTA label<input name="cta_label" value="{{ product.cta_label or 'Learn more' }}"></label><label class="span-two">CTA link<input type="url" name="cta_url" value="{{ product.cta_url or product.product_url or '' }}"></label>
+        </div>
+      </section>
+      <section class="builder-card">
+        <div class="builder-section-head"><span class="builder-index">02</span><div><h2>Messaging and guardrails</h2><p>Keep the Product narrative factual and explicit about the boundaries the writer must respect.</p></div></div>
+        <div class="builder-fields two-up"><label class="span-two">Description<textarea name="description" rows="4">{{ product.description or '' }}</textarea></label><label class="span-two">Positioning guidance<textarea name="positioning" rows="3">{{ product.positioning or '' }}</textarea></label><label>Proof points<textarea name="proof_points" rows="5">{{ (product.proof_points or [])|join('\n') }}</textarea></label><label>Claims to avoid<textarea name="claims_to_avoid" rows="5">{{ (product.claims_to_avoid or [])|join('\n') }}</textarea></label></div>
+      </section>
+      <section class="builder-card evidence-workbench">
+        <div class="builder-section-head"><span class="builder-index">03</span><div><h2>Evidence</h2><p>{{ evidence|length }} selected items define the Product’s factual source of truth.</p></div><span class="count-pill">{{ evidence|length }}</span></div>
+        {% if collection_cards %}<div class="evidence-command-bar"><label class="evidence-search"><span>Search evidence</span><input type="search" data-evidence-filter placeholder="Find evidence…"></label><div class="evidence-command-actions"><button type="button" class="secondary compact-button" data-evidence-select-visible>Select visible</button><button type="button" class="secondary compact-button" data-evidence-clear>Clear</button></div></div><div class="collection-picker bonita-evidence-picker">{% for group in collection_cards %}<details class="picker-collection" data-evidence-group><summary><span><strong>{{ group.collection.name }}</strong><small>{{ group.collection.description }}</small></span><span>{{ group['items']|length }}</span></summary><div class="picker-items evidence-list">{% for item in group['items'] %}<label class="picker-item evidence-choice" data-evidence-search="{{ (item.title ~ ' ' ~ item.item_type ~ ' ' ~ (item.text or '')[:500])|lower }}"><input type="checkbox" name="evidence_item_ids" value="{{ item._id }}" {{ 'checked' if item._id in (product.evidence_item_ids or []) else '' }}><span class="picker-check"></span><span class="picker-copy"><span class="item-type">{{ item.item_type|replace('_',' ') }}</span><strong>{{ item.title }}</strong><small>{{ (item.text or 'Evidence item')[:190] }}</small></span>{% if item.image_url %}<img class="picker-thumb" src="{{ item.image_url }}" alt="">{% endif %}</label>{% endfor %}</div></details>{% endfor %}</div>{% endif %}
+      </section>
+      <div class="detail-save-bar"><div><strong>Save Product brief</strong><span>Worker recipes immediately use the updated brief on future runs.</span></div><button class="primary" type="submit">Save changes</button></div>
+    </main>
+
+    <aside class="detail-side">
+      <section class="side-card"><div class="side-card-head"><div><span class="summary-kicker">WORKER USAGE</span><h3>Eligible in {{ workers|length }} Worker{{ '' if workers|length == 1 else 's' }}</h3></div></div>{% if workers %}<div class="side-link-list">{% for worker in workers %}<a href="{{ url_for('newsjacking_worker_detail', worker_id=worker._id) }}"><span><strong>{{ worker.name }}</strong><small>{{ 'Enabled' if worker.enabled else 'Paused' }}</small></span><b>→</b></a>{% endfor %}</div>{% else %}<div class="side-empty">Not used yet. Add this Product to a Worker when you are ready.</div>{% endif %}</section>
+      <section class="side-card"><div class="side-card-head"><div><span class="summary-kicker">OUTPUT HISTORY</span><h3>{{ articles|length }} generated article{{ '' if articles|length == 1 else 's' }}</h3></div></div>{% if articles %}<div class="side-link-list">{% for article in articles[:8] %}<a href="{{ url_for('article_detail', article_id=article._id) }}"><span><strong>{{ article.metadata.title if article.metadata else 'Article' }}</strong><small>{{ article.created_at|dt }}</small></span><b>→</b></a>{% endfor %}</div>{% else %}<div class="side-empty">Articles appear after a Worker selects this Product for a relevant story.</div>{% endif %}</section>
+      <section class="side-card danger-side"><span class="summary-kicker">DANGER ZONE</span><h3>Delete Product</h3><p>Deletion is available only when no Worker references this Product.</p><form method="post" action="{{ url_for('product_delete', product_id=product._id) }}" onsubmit="return confirm('Delete this product? Existing articles will remain intact.')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger" type="submit">Delete product</button></form></section>
+    </aside>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='evidence-picker.js') }}"></script>{% endblock %}

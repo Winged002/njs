@@ -1,0 +1,20 @@
+[Unit]
+Description=NJS restricted custom-domain provisioner
+After=network-online.target nginx.service
+Wants=network-online.target
+Requires=nginx.service
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/njs-domain-provisioner.env
+ExecStart=/usr/local/lib/njs/njs-domain-provisioner.py
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/etc/nginx /etc/letsencrypt /var/lib/letsencrypt /var/log/letsencrypt /run/njs-domain-provisioner
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Collections · Newsjacking{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="eyebrow">KNOWLEDGE · EVIDENCE LIBRARY</div><h1>Collections</h1><p>Build reusable research libraries from websites, documents, videos, tables, images and notes. Campaigns are generated from explicit items selected here.</p></div></div>
+<div class="two-col collection-list-layout">
+<section class="panel">
+  <div class="panel-head"><div><h2>New collection</h2><p class="muted">Use a collection for a product, organization, market, research topic, customer, or ongoing evidence set.</p></div><span class="badge soft">Evidence library</span></div>
+  <form method="post" class="form-stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Name<input name="name" required maxlength="180" placeholder="Example: Authentiverse source library"></label>
+    <label>Description <span class="muted">optional</span><textarea name="description" rows="4" maxlength="1500" placeholder="What belongs in this collection and how it should be used."></textarea></label>
+    <button class="primary" type="submit">Create collection</button>
+  </form>
+</section>
+<section class="panel">
+  <div class="panel-head"><div><h2>Your collections</h2><p class="muted">Reusable evidence, independent from campaigns.</p></div><span class="count-pill">{{ collections|length }}</span></div>
+  {% if collections %}<div class="collection-card-list">{% for c in collections %}
+  <a class="collection-card" href="{{ url_for('collection_detail', collection_id=c._id) }}">
+    <div><strong>{{ c.name }}</strong><p>{{ c.description or 'No description yet.' }}</p></div>
+    <div class="collection-card-meta"><span>{{ c.source_count }} sources</span><span>{{ c.item_count }} items</span><span>Updated {{ c.updated_at|dt }}</span></div>
+  </a>{% endfor %}</div>
+  {% else %}<div class="empty-callout"><strong>No collections yet.</strong><span>Create one, then add URLs, files, YouTube videos or notes.</span></div>{% endif %}
+</section>
+</div>
+{% endblock %}

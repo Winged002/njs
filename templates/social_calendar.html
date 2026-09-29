@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Social calendar · Newsjacking{% endblock %}
+{% block workspace_context %}<span>/</span><strong>Calendar</strong>{% endblock %}
+{% block content %}
+<div class="page-head distribution-head">
+  <div><div class="eyebrow">SOCIAL · DISTRIBUTION CALENDAR</div><h1>See the week before it happens</h1><p>Scheduled social posts and newsletter deadlines share one distribution calendar.</p></div>
+  <form method="get" class="social-campaign-picker"><label>Campaign</label><select name="campaign_id" onchange="this.form.submit()"><option value="all" {{ 'selected' if not selected_campaign else '' }}>All active campaigns</option>{% for c in campaigns %}<option value="{{ c._id }}" {{ 'selected' if selected_campaign and c._id == selected_campaign._id else '' }}>{{ c.title }}</option>{% endfor %}</select></form>
+</div>
+<div class="distribution-toolbar">
+  <a class="secondary button-link" href="{{ url_for('social_calendar_view', week=prev_week, campaign_id=selected_campaign._id if selected_campaign else '') }}">← Previous</a>
+  <div><strong>Week of {{ week_start.strftime('%b %d, %Y') }}</strong><span>{{ timezone_name }}</span></div>
+  <a class="secondary button-link" href="{{ url_for('social_calendar_view', week=next_week, campaign_id=selected_campaign._id if selected_campaign else '') }}">Next →</a>
+</div>
+<div class="distribution-kpis">
+  <a class="metric-card" href="{{ url_for('social_queue_view', campaign_id=selected_campaign._id if selected_campaign else '') }}"><span>Needs scheduling</span><strong>{{ unscheduled_count }}</strong><small>Generated posts without a time</small></a>
+  <a class="metric-card" href="{{ url_for('newsletter_manage') }}"><span>Newsletter cadence</span><strong>Auto</strong><small>Drafts appear at configured deadlines</small></a>
+  <a class="metric-card" href="{{ url_for('social_posts_view', campaign_id=selected_campaign._id if selected_campaign else '') }}"><span>Generation</span><strong>On demand</strong><small>Regenerate copy or imagery anytime</small></a>
+</div>
+<div class="week-calendar">
+{% for day in days %}
+  <section class="calendar-day {{ 'is-today' if day.date == today else '' }}">
+    <header><span>{{ day.date.strftime('%a') }}</span><strong>{{ day.date.strftime('%d') }}</strong></header>
+    <div class="calendar-day-body">
+      {% for post in day.posts %}
+      <a class="calendar-event social-event" href="{{ url_for('social_queue_view', campaign_id=post.campaign_id) }}"><span class="event-time">{{ post.scheduled_local.strftime('%H:%M') }}</span><strong>{{ post.platform|capitalize }}</strong><small>{{ post.article_title }}</small></a>
+      {% endfor %}
+      {% for edition in day.editions %}
+      <a class="calendar-event newsletter-event" href="{{ url_for('newsletter_edition_detail', edition_id=edition._id) }}"><span class="event-time">{{ edition.due_local.strftime('%H:%M') }}</span><strong>Newsletter</strong><small>{{ edition.schedule_name or edition.subject or 'Edition' }}</small></a>
+      {% endfor %}
+      {% if not day.posts and not day.editions %}<div class="calendar-empty">No distribution scheduled</div>{% endif %}
+    </div>
+  </section>
+{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,264 @@
+name: syntal-njs
+
+x-app-env: &app-env
+  APP_ENV: production
+  APP_VERSION: 3.9.5.3
+  SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
+  DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?DEEPSEEK_API_KEY is required}
+  DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+  DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-v4-flash}
+  DEEPSEEK_REASONING_MODEL: ${DEEPSEEK_REASONING_MODEL:-deepseek-v4-flash}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  SUPADATA_API_KEY: ${SUPADATA_API_KEY:-}
+  SUPADATA_BASE_URL: ${SUPADATA_BASE_URL:-https://api.supadata.ai/v1}
+  COLLECTION_FILE_DIR: /app/data/collections
+  COLLECTION_MAX_UPLOAD_BYTES: ${COLLECTION_MAX_UPLOAD_BYTES:-26214400}
+  SOCIAL_TEXT_MODEL: ${SOCIAL_TEXT_MODEL:-deepseek-v4-flash}
+  SOCIAL_TEXT_TEMPERATURE: ${SOCIAL_TEXT_TEMPERATURE:-0.7}
+  SOCIAL_IMAGE_MODEL: ${SOCIAL_IMAGE_MODEL:-gpt-image-2}
+  SOCIAL_IMAGE_SIZE: ${SOCIAL_IMAGE_SIZE:-1024x1024}
+  SOCIAL_IMAGE_QUALITY: ${SOCIAL_IMAGE_QUALITY:-low}
+  SOCIAL_IMAGE_OUTPUT_FORMAT: ${SOCIAL_IMAGE_OUTPUT_FORMAT:-jpeg}
+  SOCIAL_IMAGE_OUTPUT_COMPRESSION: ${SOCIAL_IMAGE_OUTPUT_COMPRESSION:-88}
+  SOCIAL_IMAGE_OUTPUT_DIR: /app/static/generated/social
+  SOCIAL_IMAGE_URL_PREFIX: /static/generated/social
+  NEWSLETTER_TEXT_MODEL: ${NEWSLETTER_TEXT_MODEL:-deepseek-v4-flash}
+  NEWSLETTER_TEXT_TEMPERATURE: ${NEWSLETTER_TEXT_TEMPERATURE:-0.55}
+  NEWSLETTER_SCHEDULE_TICK_SECONDS: ${NEWSLETTER_SCHEDULE_TICK_SECONDS:-900}
+  SSO_ENABLED: ${SSO_ENABLED:-true}
+  SSO_ISSUER: ${SSO_ISSUER:-https://sso.syntal.pro}
+  SSO_CLIENT_ID: ${SSO_CLIENT_ID:-njs}
+  SSO_CLIENT_SECRET: ${SSO_CLIENT_SECRET:-}
+  SSO_REDIRECT_URI: ${SSO_REDIRECT_URI:-https://njs.syntal.pro/auth/callback}
+  SSO_SCOPES: ${SSO_SCOPES:-openid profile email organization permissions offline_access}
+  SSO_REQUIRED_PERMISSION: ${SSO_REQUIRED_PERMISSION:-njs.access}
+  SSO_ADMIN_PERMISSION: ${SSO_ADMIN_PERMISSION:-njs.admin}
+  SSO_ENFORCE_PERMISSION: ${SSO_ENFORCE_PERMISSION:-true}
+  SSO_LOCAL_FALLBACK: ${SSO_LOCAL_FALLBACK:-false}
+  SSO_ACCOUNT_URL: ${SSO_ACCOUNT_URL:-https://sso.syntal.pro/}
+  SSO_ORGANIZATIONS_ENDPOINT: ${SSO_ORGANIZATIONS_ENDPOINT:-https://sso.syntal.pro/v1/organizations}
+  SSO_ORGANIZATIONS_CACHE_SECONDS: ${SSO_ORGANIZATIONS_CACHE_SECONDS:-120}
+  SSO_AI_DELEGATION_ENDPOINT: ${SSO_AI_DELEGATION_ENDPOINT:-https://sso.syntal.pro/v1/ai/delegation-check}
+  ANALYTICS_RETENTION_DAYS: ${ANALYTICS_RETENTION_DAYS:-730}
+  PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://njs.syntal.pro}
+  PUBLISHING_IP: ${PUBLISHING_IP:-95.179.253.170}
+  PUBLISHING_PRIMARY_HOST: ${PUBLISHING_PRIMARY_HOST:-njs.syntal.pro}
+  CUSTOM_DOMAIN_ROUTING: ${CUSTOM_DOMAIN_ROUTING:-true}
+  DOMAIN_AUTO_PROVISION: ${DOMAIN_AUTO_PROVISION:-true}
+  DOMAIN_PROVISIONER_SOCKET: ${DOMAIN_PROVISIONER_SOCKET:-/run/njs-domain-provisioner/provision.sock}
+  DOMAIN_PROVISIONER_TOKEN: ${DOMAIN_PROVISIONER_TOKEN:-}
+  DOMAIN_PROVISIONER_TIMEOUT_SECONDS: ${DOMAIN_PROVISIONER_TIMEOUT_SECONDS:-210}
+  DOMAIN_PROVISIONER_APP_PORT: ${HOST_PORT:-8010}
+  MONGO_URI: mongodb://${MONGO_APP_USER:-newsjacking}:${MONGO_APP_PASSWORD:?MONGO_APP_PASSWORD is required}@mongo:27017/${MONGO_DB:-newsjacking}?authSource=${MONGO_DB:-newsjacking}
+  REDIS_URL: redis://redis:6379/0
+  NEWSJACKING_INTERVAL_SECONDS: ${NEWSJACKING_INTERVAL_SECONDS:-3600}
+  NEWSJACKING_DEFAULT_MIN_CONFIDENCE: ${NEWSJACKING_DEFAULT_MIN_CONFIDENCE:-0.65}
+  NEWSJACKING_DEFAULT_MAX_ARTICLES_PER_RUN: ${NEWSJACKING_DEFAULT_MAX_ARTICLES_PER_RUN:-10}
+  NEWSJACKING_MAX_ARTICLES_PER_RUN: ${NEWSJACKING_MAX_ARTICLES_PER_RUN:-50}
+  NEWSJACKING_MAX_ITEMS_PER_RUN: ${NEWSJACKING_MAX_ITEMS_PER_RUN:-1000}
+  ENABLE_CREDITS: ${ENABLE_CREDITS:-true}
+  NEWSJACKING_CHECK_CREDIT_COST: ${NEWSJACKING_CHECK_CREDIT_COST:-1}
+  NEWSJACKING_ARTICLE_CREDIT_COST: ${NEWSJACKING_ARTICLE_CREDIT_COST:-40}
+  SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
+  WEBSITE_RESEARCH_TIMEOUT_SECONDS: ${WEBSITE_RESEARCH_TIMEOUT_SECONDS:-15}
+  WEBSITE_RESEARCH_MAX_BYTES: ${WEBSITE_RESEARCH_MAX_BYTES:-1500000}
+  ARTICLE_MIN_WORDS: ${ARTICLE_MIN_WORDS:-900}
+  ARTICLE_TARGET_MAX_WORDS: ${ARTICLE_TARGET_MAX_WORDS:-1700}
+  ARTICLE_QUALITY_REWRITE_THRESHOLD: ${ARTICLE_QUALITY_REWRITE_THRESHOLD:-82}
+  ARTICLE_SOURCE_RESEARCH: ${ARTICLE_SOURCE_RESEARCH:-true}
+  AUTHOR_IMAGE_OUTPUT_DIR: /app/static/generated/authors
+  AUTHOR_IMAGE_URL_PREFIX: ${AUTHOR_IMAGE_URL_PREFIX:-/static/generated/authors}
+  AUTHOR_IMAGE_MAX_BYTES: ${AUTHOR_IMAGE_MAX_BYTES:-8388608}
+  ARTICLE_IMAGE_MODEL: ${ARTICLE_IMAGE_MODEL:-gpt-image-2}
+  ARTICLE_IMAGE_SIZE: ${ARTICLE_IMAGE_SIZE:-1536x1024}
+  ARTICLE_IMAGE_QUALITY: ${ARTICLE_IMAGE_QUALITY:-medium}
+  ARTICLE_IMAGE_OUTPUT_FORMAT: ${ARTICLE_IMAGE_OUTPUT_FORMAT:-jpeg}
+  ARTICLE_IMAGE_OUTPUT_COMPRESSION: ${ARTICLE_IMAGE_OUTPUT_COMPRESSION:-88}
+  ARTICLE_IMAGE_OUTPUT_DIR: /app/static/generated/articles
+  ARTICLE_IMAGE_URL_PREFIX: /static/generated/articles
+  ARTICLE_INLINE_COLLECTION_IMAGE_LIMIT: ${ARTICLE_INLINE_COLLECTION_IMAGE_LIMIT:-2}
+  LANDING_GENERATED_IMAGE_MODEL: ${LANDING_GENERATED_IMAGE_MODEL:-gpt-image-2}
+  LANDING_GENERATED_IMAGE_SIZE: ${LANDING_GENERATED_IMAGE_SIZE:-1536x1024}
+  LANDING_GENERATED_IMAGE_QUALITY: ${LANDING_GENERATED_IMAGE_QUALITY:-medium}
+  LANDING_GENERATED_IMAGE_OUTPUT_FORMAT: ${LANDING_GENERATED_IMAGE_OUTPUT_FORMAT:-jpeg}
+  LANDING_GENERATED_IMAGE_OUTPUT_COMPRESSION: ${LANDING_GENERATED_IMAGE_OUTPUT_COMPRESSION:-88}
+  LANDING_GENERATED_IMAGE_OUTPUT_DIR: /app/static/generated/landing
+  LANDING_GENERATED_IMAGE_URL_PREFIX: /static/generated/landing
+  LANDING_GENERATED_IMAGE_COUNT: ${LANDING_GENERATED_IMAGE_COUNT:-1}
+  LANDING_MAX_VISUAL_ASSETS: ${LANDING_MAX_VISUAL_ASSETS:-8}
+  LANDING_QUALITY_REWRITE_THRESHOLD: ${LANDING_QUALITY_REWRITE_THRESHOLD:-82}
+  LANDING_MAX_ARTICLES: ${LANDING_MAX_ARTICLES:-12}
+
+x-app-common: &app-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: syntal-njs-app:3.9.5.3
+  restart: unless-stopped
+  init: true
+  environment: *app-env
+  depends_on:
+    mongo:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  networks:
+    - backend
+  security_opt:
+    - no-new-privileges:true
+
+services:
+  mongo:
+    image: mongo:8.0
+    container_name: syntal-njs-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
+      MONGO_DB: ${MONGO_DB:-newsjacking}
+      MONGO_APP_USER: ${MONGO_APP_USER:-newsjacking}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:?MONGO_APP_PASSWORD is required}
+    command:
+      - mongod
+      - --auth
+      - --bind_ip_all
+      - --wiredTigerCacheSizeGB
+      - "0.25"
+    volumes:
+      - mongo_data:/data/db
+      - ./docker/mongo-init.sh:/docker-entrypoint-initdb.d/10-newsjacking-user.sh:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          mongosh --quiet --host 127.0.0.1
+          --username "$$MONGO_APP_USER"
+          --password "$$MONGO_APP_PASSWORD"
+          --authenticationDatabase "$$MONGO_DB"
+          "$$MONGO_DB"
+          --eval 'db.runCommand({ping:1}).ok' | grep 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - backend
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: syntal-njs-redis
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --save
+      - "60"
+      - "1"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+
+  web:
+    <<: *app-common
+    container_name: syntal-njs-web
+    command:
+      - gunicorn
+      - --workers
+      - "2"
+      - --threads
+      - "4"
+      - --bind
+      - 0.0.0.0:8000
+      - --timeout
+      - "180"
+      - --forwarded-allow-ips=*
+      - --access-logfile
+      - "-"
+      - --error-logfile
+      - "-"
+      - wsgi:app
+    ports:
+      - "127.0.0.1:${HOST_PORT:-8010}:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
+    volumes:
+      - generated_media:/app/static/generated
+      - collection_files:/app/data/collections
+      - /run/njs-domain-provisioner:/run/njs-domain-provisioner:ro
+    networks:
+      - backend
+      - frontend
+
+  worker:
+    <<: *app-common
+    container_name: syntal-njs-worker
+    command:
+      - celery
+      - -A
+      - worker.celery
+      - worker
+      - -l
+      - INFO
+      - -Q
+      - newsjacking
+      - --concurrency=2
+    volumes:
+      - generated_media:/app/static/generated
+      - collection_files:/app/data/collections
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - celery -A worker.celery inspect ping -d "celery@$$HOSTNAME" --timeout=5 2>/dev/null | grep -q pong
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  beat:
+    <<: *app-common
+    container_name: syntal-njs-beat
+    command:
+      - celery
+      - -A
+      - worker.celery
+      - beat
+      - -l
+      - INFO
+      - --schedule=/tmp/celerybeat-schedule
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+
+volumes:
+  mongo_data:
+    name: ${NJS_MONGO_VOLUME:-syntal-njs-v370-mongo-data}
+  redis_data:
+    name: ${NJS_REDIS_VOLUME:-syntal-njs-v370-redis-data}
+  generated_media:
+    name: ${NJS_GENERATED_MEDIA_VOLUME:-syntal-njs-v370-generated-media}
+  collection_files:
+    name: ${NJS_COLLECTION_FILES_VOLUME:-syntal-njs-v370-collection-files}
+
+networks:
+  backend:
+    name: syntal-njs-backend
+    driver: bridge
+  frontend:
+    name: syntal-njs-frontend
+    driver: bridge

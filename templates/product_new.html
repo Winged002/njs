@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}New product · Newsjacking{% endblock %}
+{% block content %}
+<div class="bonita-builder product-builder">
+  <header class="builder-hero">
+    <div><a class="builder-back" href="{{ url_for('product_list') }}">← Products</a><div class="eyebrow">PRODUCT LIBRARY</div><h1>Create a reusable product brief</h1><p>Define what the product is, where readers should go, and what the writer may safely claim. Workers decide when it is relevant.</p></div>
+    <div class="builder-progress"><span class="is-current"><b>1</b><i>Offer</i></span><span class="is-current"><b>2</b><i>Evidence</i></span><span><b>3</b><i>Workers</i></span></div>
+  </header>
+  <form method="post" class="builder-form" data-evidence-form data-product-create-form>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="builder-layout">
+      <main class="builder-primary">
+        <section class="builder-card">
+          <div class="builder-section-head"><span class="builder-index">01</span><div><h2>Offer essentials</h2><p>The minimum factual identity and destination used across Workers.</p></div></div>
+          <div class="builder-fields two-up">
+            <label>Product name<input name="name" maxlength="300" required autofocus value="{{ values.get('name','') if values else '' }}" placeholder="Example: Syntal Identity Cloud" data-product-name></label>
+            <label>Status<select name="status"><option value="active" {{ 'selected' if not values or values.get('status','active') == 'active' else '' }}>Active — available to workers</option><option value="draft" {{ 'selected' if values and values.get('status') == 'draft' else '' }}>Draft</option><option value="paused" {{ 'selected' if values and values.get('status') == 'paused' else '' }}>Paused</option></select></label>
+            <label class="span-two">Short tagline<input name="tagline" maxlength="600" value="{{ values.get('tagline','') if values else '' }}" placeholder="One factual sentence that explains what it is"></label>
+            <label>Product link<input type="url" name="product_url" required value="{{ values.get('product_url','') if values else '' }}" placeholder="https://example.com/product" data-product-url></label>
+            <label>CTA label<input name="cta_label" maxlength="120" value="{{ values.get('cta_label','Learn more') if values else 'Learn more' }}" placeholder="Learn more" data-product-cta></label>
+            <label class="span-two">CTA link <span class="optional-pill">Optional</span><input type="url" name="cta_url" value="{{ values.get('cta_url','') if values else '' }}" placeholder="Defaults to the product link"></label>
+          </div>
+        </section>
+        <section class="builder-card">
+          <div class="builder-section-head"><span class="builder-index">02</span><div><h2>Messaging boundary</h2><p>Tell the writer how to explain the Product, what facts it can use, and what it must never claim.</p></div></div>
+          <div class="builder-fields two-up">
+            <label class="span-two">Product description<textarea name="description" rows="4" maxlength="5000" placeholder="What the product does, who it is for, and the problem it solves.">{{ values.get('description','') if values else '' }}</textarea></label>
+            <label class="span-two">Positioning guidance<textarea name="positioning" rows="3" maxlength="5000" placeholder="How should the product be framed when it is contextually relevant?">{{ values.get('positioning','') if values else '' }}</textarea></label>
+            <label>Proof points <small>One verified fact per line</small><textarea name="proof_points" rows="5" placeholder="Fact the writer may use\nAnother verified proof point">{{ values.get('proof_points','') if values else '' }}</textarea></label>
+            <label>Claims to avoid <small>One restriction per line</small><textarea name="claims_to_avoid" rows="5" placeholder="Do not call it the market leader\nDo not claim guaranteed results">{{ values.get('claims_to_avoid','') if values else '' }}</textarea></label>
+          </div>
+        </section>
+        <section class="builder-card evidence-workbench">
+          <div class="builder-section-head"><span class="builder-index">03</span><div><h2>Product evidence <span class="optional-pill">Recommended</span></h2><p>Attach material that substantiates the Product. Campaign evidence remains separate and controls audience/editorial direction.</p></div></div>
+          {% if collection_cards %}
+          <div class="evidence-command-bar"><label class="evidence-search"><span>Search evidence</span><input type="search" placeholder="Search evidence…" data-evidence-filter></label><div class="evidence-command-actions"><strong data-evidence-count>0 selected</strong><button type="button" class="secondary compact-button" data-evidence-select-visible>Select visible</button><button type="button" class="secondary compact-button" data-evidence-clear>Clear</button></div></div>
+          <div class="collection-picker bonita-evidence-picker">{% for group in collection_cards %}<details class="picker-collection" {% if loop.first %}open{% endif %} data-evidence-group><summary><span><strong>{{ group.collection.name }}</strong><small>{{ group.collection.description or 'Evidence collection' }}</small></span><span>{{ group['items']|length }} items</span></summary><div class="picker-items evidence-list">{% for item in group['items'] %}<label class="picker-item evidence-choice" data-evidence-search="{{ (item.title ~ ' ' ~ item.item_type ~ ' ' ~ (item.text or '')[:500])|lower }}"><input type="checkbox" name="evidence_item_ids" value="{{ item._id }}" {% if values and item._id|string in values.getlist('evidence_item_ids') %}checked{% endif %}><span class="picker-check"></span><span class="picker-copy"><span class="item-type">{{ item.item_type|replace('_',' ') }}</span><strong>{{ item.title }}</strong><small>{{ (item.text or 'Evidence item')[:220] }}</small></span>{% if item.image_url %}<img class="picker-thumb" src="{{ item.image_url }}" alt="" loading="lazy">{% endif %}</label>{% endfor %}</div></details>{% endfor %}</div><div class="evidence-no-results" data-evidence-empty hidden>No evidence matches this search.</div>
+          {% else %}<div class="empty-callout compact"><strong>No Collections yet.</strong><span>You can create the Product now and add evidence later.</span></div>{% endif %}
+        </section>
+      </main>
+      <aside class="builder-side"><section class="builder-summary-card"><div class="summary-kicker">PRODUCT PREVIEW</div><h2 data-product-summary-name>Untitled product</h2><p data-product-summary-url>No destination yet</p><div class="cta-preview"><span>Reader action</span><strong data-product-summary-cta>Learn more</strong></div><div class="summary-facts"><div><span>Evidence</span><strong data-product-summary-evidence>0 items</strong></div><div><span>Eligibility</span><strong>Worker controlled</strong></div></div><div class="summary-rule"><span></span><p>Products are never forced into unrelated stories.</p></div><button class="primary builder-primary-action" type="submit">Create product →</button><small class="summary-foot">After creation, add it to one or more Newsjack Workers.</small></section></aside>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='evidence-picker.js') }}"></script><script>(()=>{const f=document.querySelector('[data-product-create-form]');if(!f)return;const n=f.querySelector('[data-product-name]'),u=f.querySelector('[data-product-url]'),c=f.querySelector('[data-product-cta]'),sn=f.querySelector('[data-product-summary-name]'),su=f.querySelector('[data-product-summary-url]'),sc=f.querySelector('[data-product-summary-cta]'),se=f.querySelector('[data-product-summary-evidence]');function up(){if(sn)sn.textContent=n?.value.trim()||'Untitled product';if(su)su.textContent=u?.value.trim()||'No destination yet';if(sc)sc.textContent=c?.value.trim()||'Learn more';const x=f.querySelectorAll('input[name="evidence_item_ids"]:checked').length;if(se)se.textContent=`${x} item${x===1?'':'s'}`;}f.addEventListener('input',up);f.addEventListener('change',up);up();})();</script>{% endblock %}

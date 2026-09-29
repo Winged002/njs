@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Sign in · Newsjacking{% endblock %}
+{% block content %}
+<div class="login-card bonita-login">
+  <section class="login-story">
+    <div class="login-brand"><span class="brand-star-tile"><img src="{{ url_for('static', filename='brand/syntal-star.svg') }}" alt=""></span><div><strong>Newsjacking</strong><small>by Syntal</small></div></div>
+    <div class="login-story-copy">
+      <div class="eyebrow">SYNTAL · NEWSJACKING</div>
+      <h1>Turn the right moment into useful content.</h1>
+      <p>Research, campaigns, publishing and analytics in one focused workspace.</p>
+    </div>
+    <div class="login-proof">
+      <span>Shared organization context</span><span>Governed publishing</span><span>Single Syntal identity</span>
+    </div>
+  </section>
+  <section class="login-action-pane">
+    <div class="login-action-copy">
+      <span class="login-kicker">Welcome back</span>
+      <h2>Continue to your workspace</h2>
+      <p>Use your Syntal account. If you belong to more than one organization, Syntal will let you choose the workspace you want to enter.</p>
+    </div>
+    <div class="form-stack">
+      <a class="primary sso-button" href="{{ url_for('auth_login') }}"><span>Continue with Syntal</span><span>→</span></a>
+      {% if local_fallback %}<a class="secondary emergency-link" href="{{ url_for('local_login') }}">Emergency local sign-in</a>{% endif %}
+    </div>
+    <small class="login-footnote">Organization access and permissions are managed in Syntal SSO.</small>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Landing pages · Newsjacking{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="eyebrow">CONTENT · WEB PUBLISHING</div><h1>Landing pages</h1><p>Turn a campaign and its website context into a complete AI-designed page, optionally map it to a verified domain, then preview and publish from NJS.</p></div><a class="secondary button-link" href="{{ url_for('domains_workspace') }}">Domains & DNS</a></div>
+<div class="two-col page-list-layout">
+<section class="panel" id="generate-page">
+  <div class="panel-head"><div><h2>Generate complete page</h2><p class="muted">Articles improve the page when available, but they are not required. NJS can build from the campaign website and strategy alone.</p></div><span class="badge soft">AI page builder</span></div>
+  <form method="post" class="form-stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Campaign<select name="campaign_id" required><option value="">Choose a campaign</option>{% for c in campaigns %}<option value="{{ c._id }}">{{ c.title }}</option>{% endfor %}</select></label>
+    <label>Page title <span class="muted">optional</span><input name="title" placeholder="Use campaign name by default"></label>
+    <label>Website to study <span class="muted">optional override</span><input type="url" name="website_url" placeholder="https://example.com — otherwise use the campaign website"></label>
+    <div class="form-split">
+      <label>Publish on domain <span class="muted">optional</span><select name="domain_id"><option value="">NJS URL only</option>{% for d in domains %}<option value="{{ d._id }}">{{ d.domain }} · {{ d.status }}</option>{% endfor %}</select></label>
+      <label>Domain path<input name="path" value="/" placeholder="/ or /research"></label>
+    </div>
+    <label>Page direction <span class="muted">optional</span><textarea name="prompt" rows="4" placeholder="Example: Build an authoritative editorial homepage for technical decision makers. Use the website's language and visual cues, highlight current Newsjacking articles, and keep the main action focused."></textarea></label>
+    <label>Route purpose <span class="muted">optional</span><input name="route_goal" placeholder="Example: Main campaign homepage"></label>
+    {% if not domains %}<div class="inline-note"><strong>Want your own domain?</strong><span><a href="{{ url_for('domains_workspace') }}">Connect and verify one first.</a></span></div>{% endif %}
+    <button class="primary">Generate full page</button>
+  </form>
+</section>
+<section class="panel"><div class="panel-head"><div><h2>Generated pages</h2><p class="muted">Drafts, published pages and domain-ready content.</p></div><span class="count-pill">{{ pages|length }}</span></div>{% if pages %}<div class="list">{% for page in pages %}<a class="row-link" href="{{ url_for('page_detail', page_id=page._id) }}"><div><strong>{{ page.title }}</strong><div class="muted small">{{ page.created_at|dt }} · revision {{ page.revision or 0 }}</div></div><span class="badge">{% if page.quality %}Q{{ page.quality.score }} · {% endif %}{{ 'published' if page.published else page.generation_status }}</span></a>{% endfor %}</div>{% else %}<div class="empty-callout"><strong>No landing pages yet.</strong><span>Choose a campaign above. A campaign website is enough to begin generating a full page.</span></div>{% endif %}</section>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Sources · Newsjacking{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="eyebrow">Sources</div><h1>Source library</h1><p>Connect RSS or Atom feeds that Newsjacking should monitor. Keep the source list relevant; campaign matching handles the filtering later.</p></div><span class="count-pill">{{ feeds|length }} sources</span></div>
+<div class="two-col source-layout">
+<section class="panel" id="add-source">
+  <div class="panel-head"><div><h2>Add source</h2><p class="muted">Paste a feed URL. A custom label is optional.</p></div></div>
+  <form method="post" class="form-stack"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label>Feed URL<input type="url" name="url" placeholder="https://example.com/feed.xml" required></label><label>Label <span class="muted">optional</span><input name="title" placeholder="Example: Identity industry news"></label><button class="primary">Add source</button></form>
+</section>
+<section class="panel">
+  <div class="panel-head"><div><h2>Connected sources</h2><p class="muted">Pause noisy sources without deleting them.</p></div></div>
+  {% if feeds %}<div class="list">{% for feed in feeds %}<div class="plain-row"><div><strong>{{ feed.title }}</strong><div class="muted break small">{{ feed.url }}</div><div class="muted small">Last fetched {{ feed.last_fetched|dt }}</div></div><div class="actions"><span class="badge {{ 'soft' if feed.is_active else '' }}">{{ 'active' if feed.is_active else 'paused' }}</span><form method="post" action="{{ url_for('feed_toggle', feed_id=feed._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary">{{ 'Pause' if feed.is_active else 'Enable' }}</button></form><form method="post" action="{{ url_for('feed_delete', feed_id=feed._id) }}" onsubmit="return confirm('Remove this source?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger-link">Remove</button></form></div></div>{% endfor %}</div>{% else %}<div class="empty-callout"><strong>No sources connected.</strong><span>Add the first RSS or Atom feed to give Newsjacking something to monitor.</span></div>{% endif %}
+</section>
+</div>
+{% endblock %}

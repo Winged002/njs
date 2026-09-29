@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Emergency sign in · Newsjacking{% endblock %}
+{% block content %}
+<div class="login-card">
+  <div>
+    <div class="eyebrow">BREAK-GLASS ACCESS</div>
+    <h1>Emergency local sign-in.</h1>
+    <p class="muted">Use only when Syntal SSO is unavailable. Normal users should sign in through sso.syntal.pro.</p>
+  </div>
+  <form method="post" class="form-stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Username<input name="username" autocomplete="username" required></label>
+    <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
+    <button class="primary">Sign in locally</button>
+    {% if sso_enabled %}<a class="secondary" href="{{ url_for('login') }}">Back to Syntal sign-in</a>{% endif %}
+  </form>
+</div>
+{% endblock %}

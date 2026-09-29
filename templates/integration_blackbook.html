@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}BlackBook integration · Newsjacking{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="eyebrow">INTEGRATIONS · CRM</div><h1>BlackBook</h1><p>Send consented article leads and survey responses into the current Syntal organization's BlackBook workspace.</p></div><div class="actions"><span class="badge {{ 'signed' if connector.configured else 'warning' }}">{{ 'Connected' if connector.configured else 'Not connected' }}</span></div></div>
+<div class="two-col integration-grid">
+<section class="panel">
+  <div class="panel-head"><div><h2>Organization connector</h2><p class="muted">Newsjacking uses BlackBook's prospect intake API. The API key is encrypted at rest and is never shown again after saving.</p></div></div>
+  {% if can_manage %}
+  <form method="post" class="stack-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="toggle-row"><span><strong>Enable BlackBook sync</strong><small>Allow articles in this organization to send captured contacts to BlackBook.</small></span><input type="checkbox" name="enabled" {{ 'checked' if connector.enabled else '' }}></label>
+    <div class="form-grid two"><label><span>BlackBook URL</span><input type="url" name="base_url" value="{{ connector.base_url or 'https://blackbook.syntal.pro' }}" required></label><label><span>Organization identifier</span><input type="text" name="organization_identifier" value="{{ connector.organization_identifier or current_user.syntal_org_id or '' }}" placeholder="org_..." required></label></div>
+    <label><span>Prospect intake API key</span><input type="password" name="api_key" autocomplete="new-password" placeholder="{{ 'Configured — leave blank to keep current key' if connector.configured else 'Paste key from BlackBook → Prospects → API' }}"><small>Stored encrypted with the NJS deployment secret.</small></label>
+    <label class="toggle-row"><span><strong>Allow automatic Mailchimp handoff</strong><small>When an article explicitly asks for marketing consent, BlackBook may mark the person eligible and sync them to its configured Mailchimp audience.</small></span><input type="checkbox" name="auto_mailchimp" {{ 'checked' if connector.auto_mailchimp else '' }}></label>
+    <div class="form-actions"><button class="primary" type="submit">Save integration</button></div>
+  </form>
+  {% else %}<div class="notice warning"><strong>Administrator access required.</strong><span>A member with <code>njs.admin</code> must configure organization integrations.</span></div>{% endif %}
+</section>
+<section class="panel">
+  <div class="panel-head"><div><h2>How data moves</h2><p class="muted">NJS stays resilient if BlackBook is unavailable.</p></div></div>
+  <div class="integration-flow"><div><span>1</span><strong>Public response</strong><small>Saved first in Newsjacking.</small></div><div><span>2</span><strong>BlackBook Person</strong><small>Email deduplication and prospect evidence.</small></div><div><span>3</span><strong>Mailchimp</strong><small>Only with explicit marketing consent and the organization setting enabled.</small></div></div>
+  <hr><dl class="details"><div><dt>Organization</dt><dd>{{ current_user.organization_name or current_user.syntal_org_id or '—' }}</dd></div><div><dt>BlackBook URL</dt><dd>{{ connector.base_url or '—' }}</dd></div><div><dt>Automatic Mailchimp</dt><dd>{{ 'Enabled' if connector.auto_mailchimp else 'Disabled' }}</dd></div></dl>
+</section>
+</div>
+<section class="panel section-gap">
+  <div class="panel-head"><div><h2>Recent sync activity</h2><p class="muted">Latest article responses that attempted BlackBook delivery.</p></div></div>
+  {% if recent_sync %}<div class="response-list">{% for row in recent_sync %}<div class="response-row"><div><strong>{{ row.email or 'Anonymous response' }}</strong><span>{{ row.created_at|dt }} · {{ row.domain or 'internal' }}</span></div><span class="badge {{ (row.blackbook or {}).status or 'disabled' }}">{{ ((row.blackbook or {}).status or 'disabled')|replace('_',' ') }}</span></div>{% endfor %}</div>{% else %}<div class="empty-callout"><strong>No sync activity yet.</strong><span>Enable audience capture on an article to start collecting responses.</span></div>{% endif %}
+</section>
+{% endblock %}

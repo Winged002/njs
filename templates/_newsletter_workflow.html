@@ -1,0 +1,9 @@
+<nav class="newsletter-flow" aria-label="Newsletter workflow">
+  <a href="{{ url_for('newsletter_home') }}" class="newsletter-flow-step {{ 'is-active' if newsletter_step == 'overview' else '' }}"><span>0</span><div><strong>Overview</strong><small>See what needs attention</small></div></a>
+  <a href="{{ url_for('newsletter_create') }}" class="newsletter-flow-step {{ 'is-active' if newsletter_step == 'plan' else '' }}"><span>1</span><div><strong>Plan</strong><small>Cadence, sources, voice</small></div></a>
+  <a href="{{ url_for('newsletter_audience') }}" class="newsletter-flow-step {{ 'is-active' if newsletter_step == 'audience' else '' }}"><span>2</span><div><strong>Audience</strong><small>BlackBook intelligence</small></div></a>
+  <a href="{{ url_for('newsletter_manage') }}" class="newsletter-flow-step {{ 'is-active' if newsletter_step == 'build' else '' }}"><span>3</span><div><strong>Build</strong><small>Generate editions</small></div></a>
+  <a href="{{ url_for('newsletter_view') }}" class="newsletter-flow-step {{ 'is-active' if newsletter_step == 'review' else '' }}"><span>4</span><div><strong>Review</strong><small>Edit and approve</small></div></a>
+  <a href="{{ url_for('newsletter_distribute') }}" class="newsletter-flow-step {{ 'is-active' if newsletter_step == 'distribute' else '' }}"><span>5</span><div><strong>Distribute</strong><small>BlackBook → Mailchimp</small></div></a>
+  <a href="{{ url_for('newsletter_learn') }}" class="newsletter-flow-step {{ 'is-active' if newsletter_step == 'learn' else '' }}"><span>6</span><div><strong>Learn</strong><small>Campaign feedback</small></div></a>
+</nav>

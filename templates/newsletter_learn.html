@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Newsletter learning · Newsjacking{% endblock %}
+{% block workspace_context %}<span>/</span><strong>Learn</strong>{% endblock %}
+{% block content %}
+<div class="newsletter-page newsletter-learn-page">
+  <div class="page-head newsletter-page-head"><div><div class="eyebrow">Newsletters</div><h1>Learn</h1><p>Use BlackBook’s Mailchimp history, engagement signals and audience intelligence to understand what is working and improve the next briefing.</p></div><a class="secondary button-link" href="{{ url_for('newsletter_audience') }}">Open Audience</a></div>
+
+  {% if not blackbook.connected %}
+    <div class="empty-callout newsletter-connection-empty"><strong>BlackBook feedback is unavailable.</strong><span>{{ blackbook.error }}</span><a class="primary button-link" href="{{ url_for('blackbook_integration') }}">Configure BlackBook</a></div>
+  {% else %}
+    {% set context=blackbook.context or {} %}{% set counts=context.counts or {} %}
+    <div class="detail-metric-strip newsletter-metric-strip">
+      <div><span>Campaign history</span><strong>{{ counts.campaigns or 0 }}</strong><small>Imported Mailchimp campaigns</small></div>
+      <div><span>Analyzed people</span><strong>{{ counts.analyzed or 0 }}</strong><small>Behavior profiles</small></div>
+      <div><span>Eligible audience</span><strong>{{ counts.eligible or 0 }}</strong><small>Marketing eligible</small></div>
+      <div><span>NJS deliveries</span><strong>{{ stats.distributed }}</strong><small>Recorded handoffs</small></div>
+    </div>
+
+    <div class="detail-workspace newsletter-learn-workspace">
+      <main class="detail-main">
+        <section class="builder-card">
+          <div class="builder-section-head"><span class="builder-index">01</span><div><h2>Recent Mailchimp performance</h2><p>Campaign history imported and attributed by BlackBook.</p></div></div>
+          {% if blackbook.campaigns %}<div class="table-wrap newsletter-performance-wrap"><table class="data-table newsletter-performance-table"><thead><tr><th>Campaign</th><th>Sent</th><th>Opens</th><th>Clicks</th></tr></thead><tbody>{% for c in blackbook.campaigns %}<tr><td><strong>{{ c.subject or c.title }}</strong><small>{{ c.send_time or 'Not sent' }}</small></td><td>{{ c.emails_sent or 0 }}</td><td>{{ c.unique_opens or 0 }}</td><td>{{ c.unique_clicks or 0 }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty-callout compact"><strong>No campaign reports yet.</strong><span>Refresh Mailchimp reports in BlackBook after campaigns are sent.</span></div>{% endif %}
+        </section>
+      </main>
+
+      <aside class="detail-side">
+        <section class="side-card"><div class="side-card-head"><div><span class="summary-kicker">AUDIENCE CATEGORIES</span><h3>Behavioral clusters</h3></div></div><div class="newsletter-category-list">{% for c in context.categories or [] %}<div><span>{{ c.name }}</span><strong>{{ c.count }}</strong></div>{% else %}<div class="side-empty">Run audience analysis in BlackBook to populate behavior-based categories.</div>{% endfor %}</div></section>
+        <section class="side-card"><div class="side-card-head"><div><span class="summary-kicker">HIGH SIGNAL PEOPLE</span><h3>Recent engagement</h3></div></div><div class="newsletter-high-signal-list">{% for p in context.high_value_people or [] %}<div><span class="person-avatar">{{ (p.name or '?')[:1]|upper }}</span><span><strong>{{ p.name }}</strong><small>{{ p.primary_category or p.organization or 'BlackBook contact' }}</small></span><b>{{ p.score or 0 }}</b></div>{% else %}<div class="side-empty">No recent high-signal engagement has been imported.</div>{% endfor %}</div></section>
+      </aside>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

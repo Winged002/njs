@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Newsletters · Newsjacking{% endblock %}
+{% block workspace_context %}<span>/</span><strong>Overview</strong>{% endblock %}
+{% block content %}
+<div class="newsletter-page newsletter-overview-page">
+  <div class="page-head" data-live-watch data-live-scope="newsletter">
+    <div>
+      <div class="eyebrow">Newsletters</div>
+      <h1>Newsletter workspace</h1>
+      <p>Plan recurring briefings, target the right BlackBook audience, review generated editions, and hand approved content to BlackBook for Mailchimp delivery.</p>
+    </div>
+    <div class="head-actions">
+      <a class="secondary button-link" href="{{ url_for('newsletter_audience') }}">Audience</a>
+      <a class="primary button-link" href="{{ url_for('newsletter_create') }}">New newsletter</a>
+    </div>
+  </div>
+
+  <div class="detail-metric-strip newsletter-metric-strip">
+    <a href="{{ url_for('newsletter_manage') }}"><span>Plans</span><strong>{{ stats.active_schedules }}</strong><small>{{ stats.schedules }} total</small></a>
+    <a href="{{ url_for('newsletter_view', status='draft') }}"><span>Drafts</span><strong>{{ stats.draft }}</strong><small>Need review</small></a>
+    <a href="{{ url_for('newsletter_view', status='ready') }}"><span>Ready</span><strong>{{ stats.ready }}</strong><small>Approved</small></a>
+    <a href="{{ url_for('newsletter_view', status='distributed') }}"><span>Distributed</span><strong>{{ stats.distributed }}</strong><small>Completed handoffs</small></a>
+  </div>
+
+  <div class="detail-workspace newsletter-overview-workspace">
+    <main class="detail-main">
+      <section class="builder-card newsletter-focus-card">
+        <div class="builder-section-head"><span class="builder-index">01</span><div><h2>Next action</h2><p>NJS keeps the newsletter workflow explicit so generated copy is reviewed before delivery.</p></div></div>
+        {% if not schedules %}
+          <div class="newsletter-action-row"><div><strong>Create your first newsletter plan</strong><small>Set sources, cadence, voice and editorial rules.</small></div><a class="primary button-link" href="{{ url_for('newsletter_create') }}">Create plan</a></div>
+        {% elif not blackbook.connected %}
+          <div class="newsletter-action-row"><div><strong>Connect BlackBook</strong><small>{{ blackbook.error or 'Audience intelligence is not connected for this organization.' }}</small></div><a class="secondary button-link" href="{{ url_for('blackbook_integration') }}">Configure</a></div>
+        {% elif stats.ready %}
+          <div class="newsletter-action-row"><div><strong>{{ stats.ready }} edition{{ '' if stats.ready == 1 else 's' }} ready to distribute</strong><small>Verify the audience, create a Mailchimp draft, or send through BlackBook.</small></div><a class="primary button-link" href="{{ url_for('newsletter_distribute') }}">Distribute</a></div>
+        {% elif stats.draft %}
+          <div class="newsletter-action-row"><div><strong>{{ stats.draft }} draft{{ '' if stats.draft == 1 else 's' }} need review</strong><small>Review subject, preheader, opening, story order and framing.</small></div><a class="primary button-link" href="{{ url_for('newsletter_view', status='draft') }}">Review drafts</a></div>
+        {% else %}
+          <div class="newsletter-action-row"><div><strong>Build the next edition</strong><small>Your plans are configured and ready to generate.</small></div><a class="primary button-link" href="{{ url_for('newsletter_manage') }}">Build edition</a></div>
+        {% endif %}
+        {% if stats.failed %}<div class="notice danger newsletter-inline-notice"><strong>{{ stats.failed }} generation issue{{ '' if stats.failed == 1 else 's' }}.</strong> Open Review to inspect the failure before the next scheduled run.</div>{% endif %}
+      </section>
+
+      <section class="builder-card">
+        <div class="builder-section-head"><span class="builder-index">02</span><div><h2>Recent editions</h2><p>Latest generated newsletter work for this organization.</p></div><a class="quiet-link" href="{{ url_for('newsletter_view') }}">View all</a></div>
+        {% if editions %}
+          <div class="newsletter-list-rows">{% for e in editions %}<a class="newsletter-list-row" href="{{ url_for('newsletter_edition_detail', edition_id=e._id) }}"><span><strong>{{ e.subject or e.schedule_name or 'Newsletter edition' }}</strong><small>{{ e.due_at|dt }} · {{ e.story_count or 0 }} stories</small></span><span class="badge {{ e.status }}">{{ e.status }}</span></a>{% endfor %}</div>
+        {% else %}
+          <div class="empty-callout"><strong>No editions yet.</strong><span>Generate an edition from Build when a newsletter plan is ready.</span><a class="secondary button-link" href="{{ url_for('newsletter_manage') }}">Open Build</a></div>
+        {% endif %}
+      </section>
+    </main>
+
+    <aside class="detail-side">
+      <section class="side-card">
+        <div class="side-card-head"><div><span class="summary-kicker">BLACKBOOK</span><h3>Audience connection</h3></div><span class="connection-pill {{ 'online' if blackbook.connected else 'offline' }}"><span></span>{{ 'Connected' if blackbook.connected else 'Unavailable' }}</span></div>
+        {% if blackbook.connected %}
+          {% set counts = blackbook.context.counts or {} %}{% set mc = blackbook.context.mailchimp or {} %}
+          <div class="summary-facts newsletter-summary-facts">
+            <div><span>People</span><strong>{{ counts.people or 0 }}</strong></div>
+            <div><span>Eligible</span><strong>{{ counts.eligible or 0 }}</strong></div>
+            <div><span>Segments</span><strong>{{ counts.segments or 0 }}</strong></div>
+            <div><span>Campaigns</span><strong>{{ counts.campaigns or 0 }}</strong></div>
+          </div>
+          <div class="side-link-list newsletter-side-status"><div><span><strong>Mailchimp</strong><small>Organization delivery connection</small></span><span class="badge {{ 'ready' if mc.configured else 'soft' }}">{{ 'ready' if mc.configured else 'setup needed' }}</span></div><div><span><strong>Behavior analyzed</strong><small>Contacts with engagement intelligence</small></span><b>{{ counts.analyzed or 0 }}</b></div></div>
+          <a class="secondary button-link wide" href="{{ url_for('newsletter_audience') }}">Open audience</a>
+        {% else %}
+          <div class="side-empty">{{ blackbook.error }}</div>
+          <a class="secondary button-link wide" href="{{ url_for('blackbook_integration') }}">Connect BlackBook</a>
+        {% endif %}
+      </section>
+    </aside>
+  </div>
+</div>
+{% endblock %}

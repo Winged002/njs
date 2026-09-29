@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Newsletters · Newsjacking{% endblock %}
+{% block workspace_context %}<span>/</span><strong>Newsletters</strong>{% endblock %}
+{% block content %}
+<div class="page-head" data-live-watch data-live-scope="newsletter"><div><div class="eyebrow">SOCIAL · NEWSLETTER AUTOMATION</div><h1>Turn the week's reporting into an email briefing</h1><p>Schedules automatically select recent generated articles, avoid unnecessary repeats, and build reviewable newsletter drafts before the deadline.</p></div></div>
+<div class="newsletter-value-grid">
+  <div class="metric-card"><span>Selection</span><strong>Automatic</strong><small>Ranks recent articles and broadens the window if the edition is thin.</small></div>
+  <div class="metric-card"><span>Deadline</span><strong>Ready by</strong><small>Timezone-aware weekday and time scheduling.</small></div>
+  <div class="metric-card"><span>Output</span><strong>HTML + text</strong><small>Preview or export for any email platform.</small></div>
+</div>
+<section class="panel" id="new-schedule">
+  <div class="panel-head create-panel-head">
+    <div>
+      <div class="eyebrow">NEW NEWSLETTER SCHEDULE</div>
+      <h2>Set the publishing rhythm</h2>
+      <p class="muted">Choose when the briefing should be ready and which campaigns it should summarize. Everything else can stay at the defaults.</p>
+    </div>
+  </div>
+  <form method="post" class="stack-form guided-create-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="guided-form-step">
+      <div class="guided-step-head"><span>1</span><div><strong>Name the briefing</strong><small>This is how the recurring edition appears in NJS.</small></div></div>
+      <div class="form-grid three-col">
+        <div class="field-group"><label>Name</label><input name="name" placeholder="Friday intelligence brief" required></div>
+        <div class="field-group"><label>Ready by</label><input type="time" name="ready_time" value="07:30"></div>
+        <div class="field-group"><label>Timezone</label><input name="timezone" value="Europe/Skopje"></div>
+      </div>
+    </div>
+
+    <div class="guided-form-step">
+      <div class="guided-step-head"><span>2</span><div><strong>Choose the schedule</strong><small>NJS prepares a reviewable draft before the selected deadline.</small></div></div>
+      <div class="field-group"><label>Publication weekdays</label><div class="platform-checks weekday-choices">{% for value,label in weekday_options %}<label><input type="checkbox" name="weekdays" value="{{ value }}" {{ 'checked' if value in [0,2,4] else '' }}><span>{{ label }}</span></label>{% endfor %}</div></div>
+    </div>
+
+    <div class="guided-form-step">
+      <div class="guided-step-head"><span>3</span><div><strong>Choose what it should recap</strong><small>Select campaigns, or leave all unchecked to include the whole workspace.</small></div></div>
+      <div class="field-group"><div class="campaign-choice-grid newsletter-campaign-choices">{% for c in campaigns %}<label><input type="checkbox" name="campaign_ids" value="{{ c._id }}"><span><strong>{{ c.title }}</strong><small>{{ c.status }}</small></span></label>{% else %}<span class="muted">No campaigns available yet.</span>{% endfor %}</div><small class="field-help">No selection = all active campaign streams in this organization.</small></div>
+    </div>
+
+    <details class="advanced-settings compact-advanced-settings">
+      <summary><span><strong>Editorial and generation settings</strong><small>The defaults are suitable for most recurring briefings.</small></span><span>Advanced</span></summary>
+      <div class="advanced-settings-body">
+        <div class="form-grid four-col"><div class="field-group"><label>Generate ahead, min</label><input type="number" name="generation_lead_minutes" min="0" max="1440" value="90"></div><div class="field-group"><label>Lookback, days</label><input type="number" name="lookback_days" min="1" max="30" value="7"></div><div class="field-group"><label>Minimum stories</label><input type="number" name="min_stories" min="1" max="20" value="3"></div><div class="field-group"><label>Maximum stories</label><input type="number" name="max_stories" min="1" max="25" value="7"></div></div>
+        <div class="form-grid two-col"><div class="field-group"><label>Audience</label><textarea name="audience_note" rows="3">Busy readers who want the most important developments and why they matter.</textarea></div><div class="field-group"><label>Editorial voice</label><textarea name="editorial_voice" rows="3">Concise, useful, factual, and editorial. Explain why each story matters without hype.</textarea></div></div>
+        <div class="form-grid four-col"><div class="field-group"><label>Subject style</label><input name="subject_style" value="Specific and informative; avoid clickbait."></div><div class="field-group"><label>Sender name</label><input name="sender_name" value="Newsjacking Briefing"></div><div class="field-group"><label>Story CTA</label><input name="cta_label" value="Read the full story"></div><div class="field-group"><label>Main site URL</label><input type="url" name="cta_url" placeholder="https://example.com"></div></div>
+      </div>
+    </details>
+
+    <label class="toggle-card compact-toggle"><input type="checkbox" name="enabled" checked><span><strong>Enable this schedule</strong><small>Turn it off if you want to save the configuration without generating recurring drafts yet.</small></span></label>
+    <div class="create-action-bar"><div><strong>Drafts stay reviewable.</strong><span>NJS prepares the edition; it does not send email automatically.</span></div><button class="primary" type="submit">Create schedule →</button></div>
+  </form>
+</section>
+
+<section class="panel section-gap"><div class="panel-head"><div><h2>Schedules</h2><p class="muted">Each schedule can collect one or many campaign streams into its own edition.</p></div><span class="count-pill">{{ schedules|length }}</span></div>
+{% if schedules %}<div class="newsletter-schedule-list">{% for schedule in schedules %}<details class="newsletter-schedule-card" {{ 'open' if loop.first else '' }}><summary><div><span class="badge {{ 'ready' if schedule.enabled else 'draft' }}">{{ 'enabled' if schedule.enabled else 'paused' }}</span><strong>{{ schedule.name }}</strong><small>{{ schedule.ready_time or '07:30' }} · {{ schedule.timezone or 'UTC' }} · {{ schedule.min_stories or 3 }}–{{ schedule.max_stories or 7 }} stories</small></div><span>Configure</span></summary><form method="post" action="{{ url_for('newsletter_schedule_save', schedule_id=schedule._id) }}" class="stack-form schedule-edit"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div class="form-grid three-col"><div class="field-group"><label>Name</label><input name="name" value="{{ schedule.name }}"></div><div class="field-group"><label>Timezone</label><input name="timezone" value="{{ schedule.timezone or 'Europe/Skopje' }}"></div><div class="field-group"><label>Ready by</label><input type="time" name="ready_time" value="{{ schedule.ready_time or '07:30' }}"></div></div>
+<div class="field-group"><label>Publication weekdays</label><div class="platform-checks">{% for value,label in weekday_options %}<label><input type="checkbox" name="weekdays" value="{{ value }}" {{ 'checked' if value in (schedule.weekdays or []) else '' }}><span>{{ label }}</span></label>{% endfor %}</div></div>
+<div class="field-group"><label>Campaigns</label><div class="campaign-choice-grid">{% for c in campaigns %}<label><input type="checkbox" name="campaign_ids" value="{{ c._id }}" {{ 'checked' if c._id in (schedule.campaign_ids or []) else '' }}><span><strong>{{ c.title }}</strong><small>{{ c.status }}</small></span></label>{% endfor %}</div></div>
+<div class="form-grid four-col"><div class="field-group"><label>Generate ahead</label><input type="number" name="generation_lead_minutes" value="{{ schedule.generation_lead_minutes or 90 }}"></div><div class="field-group"><label>Lookback days</label><input type="number" name="lookback_days" value="{{ schedule.lookback_days or 7 }}"></div><div class="field-group"><label>Min stories</label><input type="number" name="min_stories" value="{{ schedule.min_stories or 3 }}"></div><div class="field-group"><label>Max stories</label><input type="number" name="max_stories" value="{{ schedule.max_stories or 7 }}"></div></div>
+<div class="form-grid two-col"><div class="field-group"><label>Audience</label><textarea name="audience_note" rows="3">{{ schedule.audience_note }}</textarea></div><div class="field-group"><label>Editorial voice</label><textarea name="editorial_voice" rows="3">{{ schedule.editorial_voice }}</textarea></div></div><div class="form-grid four-col"><div class="field-group"><label>Subject style</label><input name="subject_style" value="{{ schedule.subject_style }}"></div><div class="field-group"><label>Sender name</label><input name="sender_name" value="{{ schedule.sender_name }}"></div><div class="field-group"><label>CTA label</label><input name="cta_label" value="{{ schedule.cta_label }}"></div><div class="field-group"><label>Main site URL</label><input type="url" name="cta_url" value="{{ schedule.cta_url or '' }}"></div></div><label class="toggle-card compact-toggle"><input type="checkbox" name="enabled" {{ 'checked' if schedule.enabled else '' }}><span><strong>Enabled</strong><small>Automatically prepare editions on the selected days.</small></span></label><div class="form-actions"><button class="primary" type="submit">Save schedule</button></div></form><div class="schedule-card-actions"><form method="post" action="{{ url_for('newsletter_generate_now', schedule_id=schedule._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary" type="submit">Generate draft now</button></form><form method="post" action="{{ url_for('newsletter_schedule_delete', schedule_id=schedule._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="quiet danger" type="submit">Archive schedule</button></form></div></details>{% endfor %}</div>{% else %}<div class="empty-state"><strong>No newsletter schedules</strong><p>Create one above to turn the reporting stream into recurring email editions.</p></div>{% endif %}
+</section>
+<section class="panel section-gap"><div class="panel-head"><div><h2>Edition archive</h2><p class="muted">Generated drafts are never sent automatically. Review, export, or connect a delivery provider later.</p></div><span class="count-pill">{{ editions|length }}</span></div><div class="compact-table-wrap"><table class="compact-table"><thead><tr><th>Edition</th><th>Deadline</th><th>Stories</th><th>Status</th><th></th></tr></thead><tbody>{% for edition in editions %}<tr><td><strong>{{ edition.subject or edition.schedule_name or 'Edition' }}</strong><br><span class="muted">{{ edition.preheader or 'Awaiting generation' }}</span></td><td>{{ edition.due_at|dt }}</td><td>{{ edition.story_count or 0 }}</td><td><span class="badge {{ edition.status }}">{{ edition.status }}</span>{% if edition.thin_edition %}<span class="badge warning">short edition</span>{% endif %}</td><td><a class="text-link" href="{{ url_for('newsletter_edition_detail', edition_id=edition._id) }}">Open →</a></td></tr>{% else %}<tr><td colspan="5" class="muted">No editions generated yet.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}{{ edition.subject or 'Newsletter edition' }} · Newsjacking{% endblock %}
+{% block workspace_context %}<span>/</span><a href="{{ url_for('newsletter_view') }}">Review</a><span>/</span><strong>Edition</strong>{% endblock %}
+{% block content %}
+<div class="newsletter-page newsletter-edition-page">
+  <header class="detail-hero newsletter-edition-hero" data-live-watch data-live-scope="newsletter">
+    <div class="detail-identity"><span class="detail-mark newsletter-detail-mark">N</span><div><div class="eyebrow">NEWSLETTER EDITION · {{ edition.due_local_date }}</div><h1>{{ edition.subject or schedule.name or 'Newsletter edition' }}</h1><p>{{ edition.preheader or 'This edition is still being prepared.' }}</p></div></div>
+    <div class="actions">{% if edition.html %}<a class="secondary button-link" target="_blank" href="{{ url_for('newsletter_edition_preview', edition_id=edition._id) }}">Open email ↗</a><a class="secondary button-link" href="{{ url_for('newsletter_distribution_package', edition_id=edition._id) }}">Delivery package</a>{% endif %}{% if edition.status in ['ready','distributed'] %}<a class="primary button-link" href="{{ url_for('newsletter_distribute', edition=edition._id) }}">Distribute</a>{% endif %}</div>
+  </header>
+
+  <div class="detail-metric-strip newsletter-metric-strip newsletter-edition-metrics">
+    <div><span>Status</span><strong>{{ edition.status|title }}</strong><small>Edition lifecycle</small></div>
+    <div><span>Stories</span><strong>{{ edition.story_count or 0 }}</strong><small>Selected articles</small></div>
+    <div><span>Design</span><strong>r{{ edition.design_revision or 1 }}</strong><small>{{ edition.design_model or 'Default renderer' }}</small></div>
+    <div><span>Ready by</span><strong>{{ edition.due_at|dt }}</strong><small>{{ schedule.timezone or 'UTC' }}</small></div>
+  </div>
+
+  {% if edition.generation_error %}<div class="notice danger newsletter-inline-notice"><strong>Generation failed.</strong> {{ edition.generation_error }}</div>{% endif %}
+
+  <div class="detail-workspace newsletter-edition-workspace">
+    <main class="detail-main">
+      <section class="builder-card">
+        <div class="builder-section-head"><span class="builder-index">01</span><div><h2>Editorial copy</h2><p>Review the subject, preheader, opening and closing. The visual direction is reapplied after editorial changes.</p></div><span class="badge {{ edition.status }}">{{ edition.status }}</span></div>
+        <form method="post" action="{{ url_for('newsletter_edition_save', edition_id=edition._id) }}" class="builder-fields two-up newsletter-editor-fields">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label>Subject<input name="subject" value="{{ edition.subject or '' }}"></label>
+          <label>Preheader<input name="preheader" value="{{ edition.preheader or '' }}"></label>
+          <label class="span-two">Introduction<textarea name="intro" rows="4">{{ edition.intro or '' }}</textarea></label>
+          <label class="span-two">Closing<textarea name="closing" rows="3">{{ edition.closing or '' }}</textarea></label>
+          <div class="span-two form-actions"><button class="secondary" type="submit">Save editorial edits</button></div>
+        </form>
+      </section>
+
+      <section class="builder-card newsletter-design-studio" id="visual-design">
+        <div class="builder-section-head"><span class="builder-index">02</span><div><h2>Visual design</h2><p>Describe how the email should look. NJS edits the existing HTML while preserving the newsletter's stories, links and factual content.</p></div><span class="design-revision-pill">Design r{{ edition.design_revision or 1 }}</span></div>
+        {% set active_job = design_jobs[0] if design_jobs else None %}
+        {% if active_job and active_job.status in ['queued','processing','retrying'] %}
+          <div class="newsletter-design-job is-working" data-design-job data-job-url="{{ url_for('newsletter_edition_design_job_status', edition_id=edition._id, job_id=active_job._id) }}">
+            <span class="design-job-spinner"></span><div><strong>Applying visual changes</strong><small>{{ active_job.status|title }} · the current design remains available until this revision completes.</small></div>
+          </div>
+        {% elif active_job and active_job.status == 'failed' %}
+          <div class="notice danger"><strong>Latest design request failed.</strong> {{ active_job.error or 'No error detail was returned.' }}</div>
+        {% endif %}
+
+        {% if edition.html %}
+        <div class="newsletter-design-layout">
+          <div class="newsletter-design-controls">
+            <form method="post" action="{{ url_for('newsletter_edition_design_ai', edition_id=edition._id) }}" class="newsletter-prompt-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <label class="newsletter-prompt-label">What should change?</label>
+              <textarea name="notes" rows="7" required data-design-prompt placeholder="Example: Make this feel like a premium financial briefing. Use a dark navy masthead, more whitespace, thin dividers instead of cards, stronger typography, and understated blue CTA buttons. Keep it clean on mobile."></textarea>
+              <div class="newsletter-prompt-examples" aria-label="Prompt examples">
+                <button type="button" data-prompt-example="Make the newsletter feel like a premium editorial publication: white background, strong serif-style hierarchy using email-safe fonts, thin black dividers, restrained buttons, and generous spacing.">Editorial</button>
+                <button type="button" data-prompt-example="Create a modern dark header with a light email body, blue accent buttons, compact story cards, clear numbered sections, and a professional B2B technology feel.">Modern B2B</button>
+                <button type="button" data-prompt-example="Make this minimal and executive-friendly. Remove decorative card styling, use more whitespace, smaller metadata, strong headlines, subtle gray rules, and one consistent CTA treatment.">Executive</button>
+                <button type="button" data-prompt-example="Make the first story visually dominant, then present the remaining stories in a compact digest layout. Keep all content and links unchanged and ensure the layout stacks cleanly on mobile.">Lead story</button>
+              </div>
+              <label class="newsletter-future-design"><input type="checkbox" name="apply_to_future" value="1"><span><strong>Use this direction for future editions</strong><small>The prompt becomes part of this newsletter plan's standing visual brief.</small></span></label>
+              <button class="primary wide" type="submit">Apply visual changes with AI</button>
+            </form>
+            {% if edition.visual_design_prompt or schedule.visual_design_prompt %}
+            <div class="newsletter-standing-design"><span>Current visual direction</span><p>{{ edition.visual_design_prompt or schedule.visual_design_prompt }}</p></div>
+            {% endif %}
+          </div>
+
+          <div class="newsletter-live-preview">
+            <div class="newsletter-preview-toolbar"><div><strong>Live email preview</strong><span>Rendered from the current edition HTML</span></div><div class="newsletter-device-switch"><button type="button" class="is-active" data-email-width="desktop">Desktop</button><button type="button" data-email-width="mobile">Mobile</button></div></div>
+            <div class="newsletter-preview-stage" data-email-stage><iframe title="Newsletter email preview" src="{{ url_for('newsletter_edition_preview', edition_id=edition._id) }}"></iframe></div>
+          </div>
+        </div>
+
+        <details class="newsletter-source-editor">
+          <summary>Advanced HTML source</summary>
+          <form method="post" action="{{ url_for('newsletter_edition_design_html_save', edition_id=edition._id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <textarea name="html" rows="18" spellcheck="false">{{ edition.html }}</textarea>
+            <div class="form-actions"><button class="secondary" type="submit">Save HTML as new design revision</button><a class="text-link" target="_blank" href="{{ url_for('newsletter_edition_preview', edition_id=edition._id) }}">Open full preview ↗</a></div>
+          </form>
+        </details>
+        {% else %}
+        <div class="empty-callout"><strong>No email HTML yet.</strong><span>Generate this edition first, then prompt NJS to redesign it.</span></div>
+        {% endif %}
+      </section>
+
+      <section class="builder-card newsletter-story-workbench">
+        <div class="builder-section-head"><span class="builder-index">03</span><div><h2>Story sequence</h2><p>Verify the content order and editorial framing independently from the visual template.</p></div><span class="count-pill">{{ edition.story_count or 0 }}</span></div>
+        <div class="newsletter-story-list newsletter-story-list-polished">{% for story in edition.stories or [] %}<article><span class="story-index">{{ '%02d'|format(loop.index) }}</span><div><h3>{{ story.headline }}</h3><p>{{ story.summary }}</p>{% if story.why_it_matters %}<div class="newsletter-why"><span>Why it matters</span><p>{{ story.why_it_matters }}</p></div>{% endif %}{% if story.url %}<a class="text-link" target="_blank" href="{{ story.url }}">{{ story.cta_label or 'Read the full story' }} ↗</a>{% endif %}</div></article>{% else %}<div class="empty-callout"><strong>No stories available.</strong><span>NJS found no generated articles for this edition's configured scope and lookback window.</span></div>{% endfor %}</div>
+      </section>
+    </main>
+
+    <aside class="detail-side">
+      <section class="side-card">
+        <div class="side-card-head"><div><span class="summary-kicker">EDITION</span><h3>Controls</h3></div></div>
+        <div class="summary-facts newsletter-summary-facts"><div><span>Plan</span><strong>{{ schedule.name or '—' }}</strong></div><div><span>Stories</span><strong>{{ edition.story_count or 0 }}</strong></div><div><span>Editorial model</span><strong>{{ edition.generation_model or '—' }}</strong></div><div><span>Design revision</span><strong>r{{ edition.design_revision or 1 }}</strong></div>{% if edition.distribution %}<div><span>Distributed via</span><strong>{{ edition.distribution.provider or 'External delivery' }}</strong></div>{% endif %}</div>
+        <div class="newsletter-control-stack">
+          {% if edition.status == 'distributed' %}<div class="notice success"><strong>Distribution recorded.</strong> Editing or redesigning this edition clears the delivery record.</div><a class="primary button-link wide" href="{{ url_for('newsletter_distribute', edition=edition._id) }}">View distribution record</a>{% else %}<form method="post" action="{{ url_for('newsletter_edition_ready', edition_id=edition._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="primary wide" type="submit">Mark ready for delivery</button></form>{% endif %}
+          <form method="post" action="{{ url_for('newsletter_edition_regenerate', edition_id=edition._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary wide" type="submit">Regenerate editorial edition</button></form>
+          <div class="newsletter-download-row"><a class="secondary button-link" href="{{ url_for('newsletter_edition_download', edition_id=edition._id, format_name='html') }}">HTML</a><a class="secondary button-link" href="{{ url_for('newsletter_edition_download', edition_id=edition._id, format_name='txt') }}">Text</a></div>
+        </div>
+      </section>
+
+      <section class="side-card newsletter-design-history"><div class="side-card-head"><div><span class="summary-kicker">DESIGN HISTORY</span><h3>{{ design_versions|length }} saved revision{{ '' if design_versions|length == 1 else 's' }}</h3></div></div>
+        {% if design_versions %}<div class="side-link-list">{% for version in design_versions[:10] %}<div class="row-link"><span><strong>Revision {{ version.revision }}</strong><small>{{ version.reason }} · {{ version.created_at|dt }}</small></span><form method="post" action="{{ url_for('newsletter_edition_design_restore', edition_id=edition._id, version_id=version._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary compact-button" type="submit">Restore</button></form></div>{% endfor %}</div>{% else %}<div class="side-empty">Older designs appear after the first prompt, HTML edit, or editorial rerender.</div>{% endif %}
+      </section>
+
+      <section class="side-card newsletter-workflow-note"><span class="summary-kicker">WORKFLOW</span><h3>Content and design stay separate</h3><p>Generate the editorial edition, prompt the visual design until it is right, then mark the final revision ready for delivery.</p></section>
+      <section class="side-card danger-side"><span class="summary-kicker">EDITION MANAGEMENT</span><h3>Archive edition</h3><p>Remove this edition from the active review workflow without deleting its history.</p><form method="post" action="{{ url_for('newsletter_edition_archive', edition_id=edition._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger" type="submit">Archive edition</button></form></section>
+    </aside>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const prompt=document.querySelector('[data-design-prompt]');
+  document.querySelectorAll('[data-prompt-example]').forEach(btn=>btn.addEventListener('click',()=>{ if(prompt){ prompt.value=btn.dataset.promptExample||''; prompt.focus(); }}));
+  const stage=document.querySelector('[data-email-stage]');
+  document.querySelectorAll('[data-email-width]').forEach(btn=>btn.addEventListener('click',()=>{
+    document.querySelectorAll('[data-email-width]').forEach(x=>x.classList.remove('is-active'));
+    btn.classList.add('is-active');
+    if(stage) stage.classList.toggle('is-mobile',btn.dataset.emailWidth==='mobile');
+  }));
+  const job=document.querySelector('[data-design-job]');
+  if(job){
+    const url=job.dataset.jobUrl;
+    let attempts=0;
+    const poll=()=>fetch(url,{headers:{'Accept':'application/json'}}).then(r=>r.ok?r.json():null).then(data=>{
+      if(!data) return;
+      if(['completed','failed'].includes(data.status)){ window.location.reload(); return; }
+      if(++attempts<120) window.setTimeout(poll,2500);
+    }).catch(()=>{ if(++attempts<120) window.setTimeout(poll,4000); });
+    window.setTimeout(poll,1800);
+  }
+})();
+</script>
+{% endblock %}

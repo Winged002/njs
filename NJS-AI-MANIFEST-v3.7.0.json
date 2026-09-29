@@ -1,0 +1,1299 @@
+{
+  "version": "1",
+  "application": "njs",
+  "name": "NJS",
+  "app_version": "3.7.0",
+  "tools": [
+    {
+      "name": "njs.workspace.summary",
+      "description": "Summarize the active NJS workspace and its operational counts.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/workspace/summary",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "njs.campaigns.list",
+      "description": "List campaigns in the active organization.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/campaigns",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "njs.campaigns.read",
+      "description": "Read one campaign and its strategy state.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/campaigns/{campaign_id}",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "campaign_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "campaign_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.campaigns.create",
+      "description": "Create a campaign from explicit NJS evidence items.",
+      "permission": "njs.admin",
+      "risk": "write",
+      "method": "POST",
+      "path": "/api/ai/v1/campaigns",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "campaign_context": {
+            "type": "string"
+          },
+          "evidence_item_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "prepare_strategy": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "title",
+          "evidence_item_ids"
+        ]
+      }
+    },
+    {
+      "name": "njs.campaigns.update",
+      "description": "Update campaign title, context, keywords or status.",
+      "permission": "njs.admin",
+      "risk": "write",
+      "method": "PATCH",
+      "path": "/api/ai/v1/campaigns/{campaign_id}",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "campaign_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "campaign_context": {
+            "type": "string"
+          },
+          "filter_keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "draft",
+              "paused"
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "campaign_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.campaigns.prepare",
+      "description": "Queue NJS campaign research and strategy generation.",
+      "permission": "njs.admin",
+      "risk": "external",
+      "method": "POST",
+      "path": "/api/ai/v1/campaigns/{campaign_id}/prepare",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "campaign_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "campaign_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.products.list",
+      "description": "List products in the active organization.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/products",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "njs.products.read",
+      "description": "Read a product configuration.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/products/{product_id}",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "product_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.products.create",
+      "description": "Create a product for newsjacking campaigns.",
+      "permission": "njs.admin",
+      "risk": "write",
+      "method": "POST",
+      "path": "/api/ai/v1/products",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "product_url": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "positioning": {
+            "type": "string"
+          },
+          "cta_label": {
+            "type": "string"
+          },
+          "cta_url": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "name",
+          "product_url"
+        ]
+      }
+    },
+    {
+      "name": "njs.products.update",
+      "description": "Update a product configuration.",
+      "permission": "njs.admin",
+      "risk": "write",
+      "method": "PATCH",
+      "path": "/api/ai/v1/products/{product_id}",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "product_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.products.delete",
+      "description": "Delete an unused product.",
+      "permission": "njs.admin",
+      "risk": "destructive",
+      "method": "DELETE",
+      "path": "/api/ai/v1/products/{product_id}",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "product_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.collections.list",
+      "description": "List evidence collections.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/collections",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "njs.collections.read",
+      "description": "Read an evidence collection and recent items.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/collections/{collection_id}",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "collection_id": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "collection_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.collections.create",
+      "description": "Create an evidence collection.",
+      "permission": "njs.admin",
+      "risk": "write",
+      "method": "POST",
+      "path": "/api/ai/v1/collections",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "njs.collections.add_note",
+      "description": "Add a note to an evidence collection and queue extraction.",
+      "permission": "njs.admin",
+      "risk": "write",
+      "method": "POST",
+      "path": "/api/ai/v1/collections/{collection_id}/notes",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "collection_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "collection_id",
+          "text"
+        ]
+      }
+    },
+    {
+      "name": "njs.collections.add_url",
+      "description": "Add a web URL to an evidence collection and queue ingestion.",
+      "permission": "njs.admin",
+      "risk": "external",
+      "method": "POST",
+      "path": "/api/ai/v1/collections/{collection_id}/urls",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "collection_id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "collection_id",
+          "url"
+        ]
+      }
+    },
+    {
+      "name": "njs.feeds.list",
+      "description": "List RSS/news feeds.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/feeds",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "njs.feeds.create",
+      "description": "Add an RSS/news feed.",
+      "permission": "njs.admin",
+      "risk": "write",
+      "method": "POST",
+      "path": "/api/ai/v1/feeds",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "url"
+        ]
+      }
+    },
+    {
+      "name": "njs.feeds.toggle",
+      "description": "Enable or disable an RSS/news feed.",
+      "permission": "njs.admin",
+      "risk": "write",
+      "method": "POST",
+      "path": "/api/ai/v1/feeds/{feed_id}/toggle",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "feed_id": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "feed_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.feeds.delete",
+      "description": "Delete an RSS/news feed without deleting historical content.",
+      "permission": "njs.admin",
+      "risk": "destructive",
+      "method": "DELETE",
+      "path": "/api/ai/v1/feeds/{feed_id}",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "feed_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "feed_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.workers.list",
+      "description": "List newsjacking workers.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/workers",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "njs.workers.read",
+      "description": "Read a newsjacking worker configuration.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/workers/{worker_id}",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "worker_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "worker_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.workers.create",
+      "description": "Create a newsjacking worker connected to a campaign, feeds and products.",
+      "permission": "njs.admin",
+      "risk": "write",
+      "method": "POST",
+      "path": "/api/ai/v1/workers",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "campaign_id": {
+            "type": "string"
+          },
+          "feed_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "product_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "min_confidence": {
+            "type": "number"
+          },
+          "max_articles_per_run": {
+            "type": "integer"
+          },
+          "editorial_instructions": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "name",
+          "campaign_id",
+          "feed_ids",
+          "product_ids"
+        ]
+      }
+    },
+    {
+      "name": "njs.workers.update",
+      "description": "Update a newsjacking worker configuration.",
+      "permission": "njs.admin",
+      "risk": "write",
+      "method": "PATCH",
+      "path": "/api/ai/v1/workers/{worker_id}",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "worker_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "worker_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.workers.run",
+      "description": "Run a newsjacking worker now.",
+      "permission": "njs.admin",
+      "risk": "external",
+      "method": "POST",
+      "path": "/api/ai/v1/workers/{worker_id}/run",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "worker_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "worker_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.workers.toggle",
+      "description": "Enable or disable a newsjacking worker.",
+      "permission": "njs.admin",
+      "risk": "write",
+      "method": "POST",
+      "path": "/api/ai/v1/workers/{worker_id}/toggle",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "worker_id": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "worker_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.workers.delete",
+      "description": "Delete a newsjacking worker while retaining generated history.",
+      "permission": "njs.admin",
+      "risk": "destructive",
+      "method": "DELETE",
+      "path": "/api/ai/v1/workers/{worker_id}",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "worker_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "worker_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.articles.list",
+      "description": "List generated/review articles.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/articles",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "campaign_id": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "njs.articles.read",
+      "description": "Read an article and review/publication state.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/articles/{article_id}",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "article_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "article_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.articles.request_changes",
+      "description": "Queue AI revision of an article from review notes.",
+      "permission": "njs.admin",
+      "risk": "external",
+      "method": "POST",
+      "path": "/api/ai/v1/articles/{article_id}/request-changes",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "article_id": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "article_id",
+          "notes"
+        ]
+      }
+    },
+    {
+      "name": "njs.articles.sign_publish",
+      "description": "Sign the current article revision with the operator's configured author profile and publish it.",
+      "permission": "njs.admin",
+      "risk": "external",
+      "method": "POST",
+      "path": "/api/ai/v1/articles/{article_id}/sign",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "article_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "article_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.social.posts.list",
+      "description": "List generated social posts.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/social/posts",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "campaign_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "njs.social.posts.read",
+      "description": "Read one social post.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/social/posts/{post_id}",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "post_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "post_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.social.generate",
+      "description": "Generate social copy/media for an article.",
+      "permission": "njs.admin",
+      "risk": "external",
+      "method": "POST",
+      "path": "/api/ai/v1/articles/{article_id}/social/generate",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "article_id": {
+            "type": "string"
+          },
+          "platforms": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "regenerate_text": {
+            "type": "boolean"
+          },
+          "regenerate_image": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "article_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.social.posts.update",
+      "description": "Edit generated social post text.",
+      "permission": "njs.admin",
+      "risk": "write",
+      "method": "PATCH",
+      "path": "/api/ai/v1/social/posts/{post_id}",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "post_id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "post_id",
+          "text"
+        ]
+      }
+    },
+    {
+      "name": "njs.social.posts.schedule",
+      "description": "Schedule or unschedule a social post.",
+      "permission": "njs.admin",
+      "risk": "external",
+      "method": "POST",
+      "path": "/api/ai/v1/social/posts/{post_id}/schedule",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "post_id": {
+            "type": "string"
+          },
+          "scheduled_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "post_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.social.posts.archive",
+      "description": "Archive a social post.",
+      "permission": "njs.admin",
+      "risk": "destructive",
+      "method": "POST",
+      "path": "/api/ai/v1/social/posts/{post_id}/archive",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "post_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "post_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.newsletters.schedules.list",
+      "description": "List newsletter plans/schedules.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/newsletters/schedules",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "njs.newsletters.schedules.read",
+      "description": "Read a newsletter plan/schedule.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/newsletters/schedules/{schedule_id}",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "schedule_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "schedule_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.newsletters.schedules.create",
+      "description": "Create a newsletter plan/schedule.",
+      "permission": "njs.admin",
+      "risk": "write",
+      "method": "POST",
+      "path": "/api/ai/v1/newsletters/schedules",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "campaign_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "weekdays": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "ready_time": {
+            "type": "string"
+          },
+          "editorial_voice": {
+            "type": "string"
+          },
+          "audience_note": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "njs.newsletters.schedules.update",
+      "description": "Update a newsletter plan/schedule.",
+      "permission": "njs.admin",
+      "risk": "write",
+      "method": "PATCH",
+      "path": "/api/ai/v1/newsletters/schedules/{schedule_id}",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "schedule_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "schedule_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.newsletters.generate",
+      "description": "Generate a newsletter edition now.",
+      "permission": "njs.admin",
+      "risk": "external",
+      "method": "POST",
+      "path": "/api/ai/v1/newsletters/schedules/{schedule_id}/generate",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "schedule_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "schedule_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.newsletters.schedules.archive",
+      "description": "Archive a newsletter schedule.",
+      "permission": "njs.admin",
+      "risk": "destructive",
+      "method": "POST",
+      "path": "/api/ai/v1/newsletters/schedules/{schedule_id}/archive",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "schedule_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "schedule_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.newsletters.editions.list",
+      "description": "List newsletter editions.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/newsletters/editions",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "njs.newsletters.editions.read",
+      "description": "Read a newsletter edition including rendered content metadata.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/newsletters/editions/{edition_id}",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "edition_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "edition_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.newsletters.editions.update",
+      "description": "Edit a newsletter edition and recompile HTML/text.",
+      "permission": "njs.admin",
+      "risk": "write",
+      "method": "PATCH",
+      "path": "/api/ai/v1/newsletters/editions/{edition_id}",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "edition_id": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "preheader": {
+            "type": "string"
+          },
+          "intro": {
+            "type": "string"
+          },
+          "closing": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "edition_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.newsletters.editions.ready",
+      "description": "Mark a generated newsletter edition ready for distribution.",
+      "permission": "njs.admin",
+      "risk": "write",
+      "method": "POST",
+      "path": "/api/ai/v1/newsletters/editions/{edition_id}/ready",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "edition_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "edition_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.newsletters.editions.archive",
+      "description": "Archive a newsletter edition.",
+      "permission": "njs.admin",
+      "risk": "destructive",
+      "method": "POST",
+      "path": "/api/ai/v1/newsletters/editions/{edition_id}/archive",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "edition_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "edition_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.newsletters.distribute",
+      "description": "Create a Mailchimp draft or send a ready newsletter through the organization-scoped BlackBook bridge.",
+      "permission": "njs.admin",
+      "risk": "external",
+      "method": "POST",
+      "path": "/api/ai/v1/newsletters/editions/{edition_id}/distribute",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "edition_id": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "send"
+            ]
+          },
+          "reply_to": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "edition_id",
+          "action",
+          "reply_to"
+        ]
+      }
+    },
+    {
+      "name": "njs.analytics.summary",
+      "description": "Read a concise analytics summary for the active workspace.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/analytics/summary",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "njs.domains.list",
+      "description": "List publishing domains and status.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/domains",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "njs.sites.list",
+      "description": "List website sites/workspaces.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/sites",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "njs.landing_pages.list",
+      "description": "List landing pages.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/landing-pages",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "campaign_id": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "njs.landing_pages.generate",
+      "description": "Generate or regenerate a landing page through the NJS worker.",
+      "permission": "njs.admin",
+      "risk": "external",
+      "method": "POST",
+      "path": "/api/ai/v1/landing-pages/{page_id}/generate",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "page_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "page_id"
+        ]
+      }
+    },
+    {
+      "name": "njs.blackbook.status",
+      "description": "Read the organization-scoped BlackBook connector status.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "GET",
+      "path": "/api/ai/v1/blackbook/status",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "njs.blackbook.audience.preview",
+      "description": "Preview a BlackBook audience for newsletter planning.",
+      "permission": "njs.access",
+      "risk": "read",
+      "method": "POST",
+      "path": "/api/ai/v1/blackbook/audience/preview",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "segment_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "person_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "include_all_eligible": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ campaign.title }} · Newsjacking{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="eyebrow">CAMPAIGN WORKSPACE</div><h1>{{ campaign.title }}</h1><p>{{ campaign.campaign_summary or 'Newsjacking campaign operating brief.' }}</p></div>
+  <div class="actions"><span class="badge">{{ campaign.status }}</span><a class="secondary button-link" href="{{ url_for('campaign_review', campaign_id=campaign._id) }}">Review setup</a><a class="primary button-link" href="{{ url_for('newsjacking_worker_new', campaign_id=campaign._id) }}">Use in worker</a></div>
+</div>
+<div class="strategy-overview">
+  {% set strategy = [('Audience',campaign.target_audience),('Objective',campaign.campaign_goal),('Editorial blueprint',campaign.content_overview),('Engagement',campaign.engagement_engine)] %}
+  {% for label,item in strategy %}
+  <div class="strategy-tile"><span>{{ label }}</span><strong>{{ item.name or 'Not configured' }}</strong><p>{{ item.summary or item.description or item.approach or item.method or '' }}</p></div>
+  {% endfor %}
+</div>
+{% if campaign.filter_keywords %}<section class="panel slim-panel"><div class="panel-head"><h2>Relevance keywords</h2></div><div class="keyword-cloud">{% for keyword in campaign.filter_keywords %}<span>{{ keyword }}</span>{% endfor %}</div></section>{% endif %}
+{% if evidence %}<section class="panel slim-panel"><div class="panel-head"><div><h2>Campaign evidence</h2><p class="muted">The exact Collection items used to generate this operating brief.</p></div><span class="count-pill">{{ evidence|length }}</span></div><div class="campaign-evidence-strip">{% for item in evidence %}<div class="campaign-evidence-chip">{% if item.image_url %}<img src="{{ item.image_url }}" alt="">{% endif %}<span><em>{{ item.item_type|replace('_',' ') }}</em><strong>{{ item.title }}</strong><small>{{ (item.text or item.url or item.image_url or '')[:180] }}</small></span></div>{% endfor %}</div></section>{% endif %}
+<section class="panel slim-panel"><div class="panel-head"><div><h2>Newsjack Workers</h2><p class="muted">Automation recipes currently using this campaign's audience and evidence.</p></div><span class="count-pill">{{ workers|length }}</span></div>{% if workers %}<div class="compact-link-list">{% for worker in workers %}<a href="{{ url_for('newsjacking_worker_detail', worker_id=worker._id) }}"><span><strong>{{ worker.name }}</strong><small>{{ 'Enabled' if worker.enabled else 'Paused' }} · {{ worker.product_ids|length }} product{{ '' if worker.product_ids|length == 1 else 's' }}</small></span><b>→</b></a>{% endfor %}</div>{% else %}<div class="empty-callout compact"><strong>This campaign is not automated yet.</strong><span>Create a Worker to pair it with news sources and one or more Products.</span><a class="secondary button-link" href="{{ url_for('newsjacking_worker_new', campaign_id=campaign._id) }}">Create worker</a></div>{% endif %}</section>
+<div class="two-col">
+<section class="panel">
+  <div class="panel-head"><h2>News hooks</h2><span class="count-pill">{{ hooks|length }}</span></div>
+  {% if hooks %}<div class="list compact">{% for hook in hooks %}<div class="plain-row"><div><strong>{{ hook.title }}</strong><div class="muted">{{ hook.match_reason or hook.description|truncate(130) }}</div></div><span class="badge">{{ hook.status }}</span></div>{% endfor %}</div>{% else %}<div class="empty">Matching scan results will appear here.</div>{% endif %}
+</section>
+<section class="panel">
+  <div class="panel-head"><h2>Articles</h2><span class="count-pill">{{ articles|length }}</span></div>
+  {% if articles %}<div class="list compact">{% for article in articles %}<a class="row-link" href="{{ url_for('article_detail', article_id=article._id) }}"><strong>{{ article.metadata.title if article.metadata else 'Untitled article' }}</strong><span>→</span></a>{% endfor %}</div>{% else %}<div class="empty">No generated articles yet.</div>{% endif %}
+</section>
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Review campaign · {{ campaign.title }}{% endblock %}
+{% block content %}
+<div class="bonita-review campaign-review-page">
+  <header class="review-hero">
+    <div>
+      <a class="builder-back" href="{{ url_for('campaign_setup', campaign_id=campaign._id) }}">← Strategy suggestions</a>
+      <div class="eyebrow">CAMPAIGN · FINAL REVIEW</div>
+      <h1>{{ campaign.title }}</h1>
+      <p>Confirm the operating brief that Newsjack Workers will use for relevance matching, product placement and article generation.</p>
+    </div>
+    <div class="review-progress"><span class="done">✓ Evidence</span><span class="done">✓ Strategy</span><span class="current">3 Review</span></div>
+  </header>
+
+  <form method="post" class="review-cockpit">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <main class="review-main">
+      <section class="builder-card">
+        <div class="builder-section-head"><span class="builder-index">01</span><div><h2>Campaign identity</h2><p>Only the fields that affect matching and administration are editable here.</p></div></div>
+        <div class="builder-fields two-up">
+          <label>Campaign title<input name="title" value="{{ campaign.title }}" required></label>
+          <label>Status<select name="status"><option value="active" selected>Active</option><option value="draft">Draft</option><option value="paused">Paused</option></select></label>
+          <label class="span-two">Primary reference URL <span class="optional-pill">Optional</span><input name="website_url" type="url" value="{{ campaign.website_url or '' }}"></label>
+          <label class="span-two">Short context<textarea name="campaign_context" rows="2">{{ campaign.campaign_context or '' }}</textarea></label>
+          <label class="span-two">Relevance keywords<input name="filter_keywords" value="{{ (campaign.filter_keywords or [])|join(', ') }}"></label>
+        </div>
+      </section>
+
+      <section class="builder-card">
+        <div class="builder-section-head"><span class="builder-index">02</span><div><h2>Operating strategy</h2><p>These are the strategic selections Workers inherit. Return to suggestions if any one of them is wrong.</p></div><a class="secondary button-link compact-button" href="{{ url_for('campaign_setup', campaign_id=campaign._id) }}">Change</a></div>
+        <div class="strategy-review-grid">
+          {% set strategy = [('Audience', campaign.target_audience),('Objective', campaign.campaign_goal),('Editorial blueprint', campaign.content_overview),('Engagement approach', campaign.engagement_engine)] %}
+          {% for label, item in strategy %}
+          <article class="strategy-review-card"><span>{{ label }}</span><h3>{{ item.name or 'Not selected' }}</h3><p>{{ item.summary or item.description or item.approach or item.method or '' }}</p>{% if item|features %}<div class="feature-chips">{% for feature in item|features %}<span>{{ feature }}</span>{% endfor %}</div>{% endif %}</article>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="builder-card">
+        <div class="builder-section-head"><span class="builder-index">03</span><div><h2>Evidence boundary</h2><p>This is the factual context the Campaign contributes to future Worker runs.</p></div><span class="count-pill">{{ evidence|length }} items</span></div>
+        {% if evidence %}<div class="campaign-evidence-list">{% for item in evidence %}<div class="campaign-evidence-row">{% if item.image_url %}<img src="{{ item.image_url }}" alt="">{% endif %}<div><span class="item-type">{{ item.item_type|replace('_',' ') }}</span><strong>{{ item.title }}</strong><small>{{ (item.text or item.url or item.image_url or '')[:220] }}</small></div></div>{% endfor %}</div>{% elif campaign.evidence_snapshot %}<div class="notice"><strong>Evidence snapshot retained.</strong><span>The original selected source items are no longer active, but the Campaign keeps the generation snapshot.</span></div>{% else %}<div class="empty-callout compact"><strong>Legacy Campaign without Collection evidence.</strong></div>{% endif %}
+      </section>
+    </main>
+
+    <aside class="review-side">
+      <section class="approval-card">
+        <div class="summary-kicker">READY TO ACTIVATE</div>
+        <h2>Approve this brief</h2>
+        <p>Approval makes the Campaign available to Workers and future content generation.</p>
+        <div class="approval-checks">
+          <div><span>✓</span><p><strong>Audience</strong><small>{{ campaign.target_audience.name or 'Selected' }}</small></p></div>
+          <div><span>✓</span><p><strong>Objective</strong><small>{{ campaign.campaign_goal.name or 'Selected' }}</small></p></div>
+          <div><span>✓</span><p><strong>Evidence</strong><small>{{ evidence|length }} selected</small></p></div>
+          <div><span>✓</span><p><strong>Editorial direction</strong><small>Ready for matching</small></p></div>
+        </div>
+        <button class="primary builder-primary-action" type="submit">Approve campaign</button>
+        <small class="summary-foot">You can pause the Campaign later without deleting its history.</small>
+      </section>
+    </aside>
+  </form>
+</div>
+{% endblock %}

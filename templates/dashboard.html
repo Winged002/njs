@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Overview · Newsjacking{% endblock %}
+{% block content %}
+<section class="dashboard-hero">
+  <div class="dashboard-hero-copy">
+    <div class="eyebrow">{{ current_user.organization_name or 'Current workspace' }}</div>
+    <h1>Good work starts with a clear signal.</h1>
+    <p>Build reusable evidence, campaigns and products, then let independent Newsjack Workers turn the right news moments into reviewable, publishable content.</p>
+  </div>
+  <div class="dashboard-hero-actions">
+    <a class="secondary button-link" href="{{ url_for('product_list') }}">Products</a>
+    <a class="primary button-link" href="{{ url_for('newsjacking_worker_new') }}">New worker</a>
+  </div>
+</section>
+
+<div class="metrics dashboard-metrics">
+  <a class="metric metric-link" href="{{ url_for('campaign_list') }}"><span>Active campaigns</span><strong>{{ active_campaigns }}</strong><small>Ready for matching</small></a>
+  <a class="metric metric-link" href="{{ url_for('feeds') }}"><span>Monitored sources</span><strong>{{ active_feeds }}</strong><small>Currently active</small></a>
+  <a class="metric metric-link" href="{{ url_for('article_list') }}"><span>Generated articles</span><strong>{{ generated_articles }}</strong><small>Editorial output</small></a>
+  <a class="metric metric-link" href="{{ url_for('newsjacking') }}"><span>Latest scan</span><strong class="small-strong">{{ last_run.started_at|dt if last_run else 'Not run yet' }}</strong><small>{{ (last_run.status|replace('_',' ')|title) if last_run else 'Automation is ready' }}</small></a>
+</div>
+
+<div class="dashboard-grid">
+  <section class="panel dashboard-focus-card">
+    <div class="panel-head">
+      <div><div class="eyebrow">Needs attention</div><h2>Campaign readiness</h2></div>
+      <a class="quiet-link" href="{{ url_for('campaign_list') }}">View all →</a>
+    </div>
+    {% if setup_campaigns %}
+      <div class="list compact-list">
+        {% for campaign in setup_campaigns %}
+        <a class="row-link" href="{% if campaign.setup_status == 'review' %}{{ url_for('campaign_review', campaign_id=campaign._id) }}{% else %}{{ url_for('campaign_setup', campaign_id=campaign._id) }}{% endif %}">
+          <div><strong>{{ campaign.title }}</strong><div class="muted small">{{ campaign.setup_status|replace('_',' ')|title }}</div></div>
+          <span class="row-arrow">→</span>
+        </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="dashboard-empty"><span class="dashboard-empty-icon">✓</span><div><strong>Everything is clear.</strong><small>No campaign setup is waiting for you.</small></div></div>
+    {% endif %}
+  </section>
+
+  <section class="panel dashboard-flow-card">
+    <div class="panel-head"><div><div class="eyebrow">Workflow</div><h2>From signal to published</h2></div></div>
+    <div class="workflow-modern">
+      <a href="{{ url_for('collection_list') }}"><span>01</span><div><strong>Collect</strong><small>Build reusable source-of-truth evidence.</small></div></a>
+      <a href="{{ url_for('campaign_list') }}"><span>02</span><div><strong>Direct</strong><small>Define the audience and editorial strategy.</small></div></a>
+      <a href="{{ url_for('product_list') }}"><span>03</span><div><strong>Offer</strong><small>Define products, proof and proportionate CTAs.</small></div></a>
+      <a href="{{ url_for('newsjacking') }}"><span>04</span><div><strong>Automate</strong><small>Workers combine sources, campaign and products.</small></div></a>
+      <a href="{{ url_for('article_review_queue') }}"><span>05</span><div><strong>Review & publish</strong><small>Approve the article before it becomes public.</small></div></a>
+    </div>
+  </section>
+</div>
+
+<section class="panel recent-output-card">
+  <div class="panel-head">
+    <div><div class="eyebrow">Recent output</div><h2>Latest articles</h2></div>
+    <a class="quiet-link" href="{{ url_for('article_list') }}">All articles →</a>
+  </div>
+  {% if recent_articles %}
+    <div class="list recent-output-list">
+      {% for article in recent_articles %}
+      <a class="row-link" href="{{ url_for('article_detail', article_id=article._id) }}">
+        <div><strong>{{ article.metadata.title if article.metadata else 'Untitled article' }}</strong><div class="muted small">{{ article.created_at|dt }}</div></div>
+        <span class="badge">{{ article.status or 'draft' }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="dashboard-empty wide"><span class="dashboard-empty-icon">✦</span><div><strong>Your first article will appear here.</strong><small>Create evidence, an active Campaign and Product, then connect them to sources through a Newsjack Worker.</small></div><a class="secondary button-link" href="{{ url_for('newsjacking_worker_new') }}">Create worker</a></div>
+  {% endif %}
+</section>
+{% endblock %}

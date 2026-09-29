@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Experiments · Newsjacking{% endblock %}
+{% block content %}
+<section class="page-head compact-head">
+  <div><div class="eyebrow">EXPERIMENTATION</div><h1>Experiments</h1><p>Run controlled tests on published pages and articles, then measure the full attribution path before choosing a winner.</p></div>
+  <div class="actions"><a class="primary button-link" href="{{ url_for('experiment_new') }}">New experiment</a></div>
+</section>
+
+{% if cards %}
+<div class="experiment-card-grid">
+{% for card in cards %}{% set exp=card.experiment %}
+<a class="panel experiment-card" href="{{ url_for('experiment_detail', experiment_id=exp._id) }}">
+  <div class="experiment-card-top"><span class="badge {{ exp.status }}">{{ exp.status }}</span><span class="experiment-target-kind">{{ exp.target_type }}</span></div>
+  <div><h2>{{ exp.name }}</h2><p>{{ card.target_label }}</p></div>
+  <div class="experiment-metric-row">
+    {% for row in card.results %}<div><small>{{ row.name }}</small><strong>{% if exp.primary_metric == 'cta_ctr' %}{{ row.cta_ctr }}%{% elif exp.primary_metric == 'product_ctr' %}{{ row.product_ctr }}%{% elif exp.primary_metric == 'engagement_rate' %}{{ row.engagement_rate }}%{% else %}{{ row.conversion_rate }}%{% endif %}</strong><span>{{ row.views }} views</span></div>{% endfor %}
+    {% if not card.results %}<div class="experiment-empty-metric"><small>Primary metric</small><strong>{{ exp.primary_metric|replace('_',' ') }}</strong><span>Waiting to start</span></div>{% endif %}
+  </div>
+  <div class="experiment-card-foot"><span>{{ exp.primary_metric|replace('_',' ') }}</span><span>{{ exp.updated_at|dt }}</span></div>
+</a>
+{% endfor %}
+</div>
+{% else %}
+<section class="panel empty-state polished-empty"><div class="empty-icon">◫</div><h2>No experiments yet</h2><p>Create a controlled Control vs Challenger test against a published page or article. v3.1 attribution will measure each variant separately.</p><a class="primary button-link" href="{{ url_for('experiment_new') }}">Create first experiment</a></section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Author profile · Newsjacking{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="eyebrow">PUBLISHING IDENTITY</div><h1>Author profile</h1><p>This identity is attached to article revisions you personally sign for publication.</p></div>{% if profile.full_name and profile.image_url %}<span class="badge signed">Ready to sign</span>{% else %}<span class="badge warning">Setup required</span>{% endif %}</div>
+<div class="author-profile-layout">
+<section class="panel author-profile-card">
+  <div class="panel-head"><div><h2>Public author identity</h2><p class="muted">A full name and profile picture are required before you can approve an article.</p></div></div>
+  <form method="post" enctype="multipart/form-data" class="form-stack author-profile-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="next" value="{{ next_url or '' }}">
+    <div class="author-profile-preview">
+      {% if profile.image_url %}<img src="{{ profile.image_url }}" alt="{{ profile.full_name or suggested_name }}">
+      {% else %}<div class="author-avatar-placeholder">{{ (suggested_name or 'A')[:1]|upper }}</div>{% endif %}
+      <div><strong>{{ profile.full_name or suggested_name or 'Author name' }}</strong><span>{{ current_user.organization_name or 'Current organization' }}</span></div>
+    </div>
+    <label>Full name<input name="full_name" maxlength="180" value="{{ profile.full_name or suggested_name or '' }}" placeholder="Full name shown on published articles" required></label>
+    <label>Profile picture<input type="file" name="picture" accept="image/jpeg,image/png,image/webp" {{ '' if profile.image_url else 'required' }}><small>JPG, PNG or WebP. NJS creates a square publication image.</small></label>
+    <div class="inline-note"><strong>Signature behavior</strong><span>When you sign an article, NJS snapshots this name and picture into that exact published revision. Editing this profile later does not rewrite earlier signatures.</span></div>
+    <div class="form-actions"><button class="primary" type="submit">Save author profile</button><a class="secondary button-link" href="{{ url_for('article_review_queue') }}">Review queue</a></div>
+  </form>
+</section>
+<section class="panel author-policy-card">
+  <div class="panel-head"><h2>Article sign-off</h2></div>
+  <div class="workflow-steps">
+    <div><span>1</span><strong>Article generated</strong><small>It enters the organization review queue and is not public.</small></div>
+    <div><span>2</span><strong>Review revisions</strong><small>Save notes against an exact revision or request a new AI revision.</small></div>
+    <div><span>3</span><strong>Sign current revision</strong><small>A member of the article's organization signs using a completed author profile.</small></div>
+    <div><span>4</span><strong>Signed revision goes live</strong><small>Later edits remain private until the newer revision receives its own sign-off.</small></div>
+  </div>
+</section>
+</div>
+{% endblock %}

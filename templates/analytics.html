@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Analytics · {{ app_name }}{% endblock %}
+{% block workspace_context %}<span>/</span><strong>Analytics</strong>{% endblock %}
+{% block content %}
+<section class="analytics-shell" data-analytics-root>
+  <div class="analytics-topbar">
+    <div>
+      <div class="eyebrow">First-party publishing analytics</div>
+      <h1>Audience & content performance</h1>
+      <p>Follow the full path from audience exposure to product interest and confirmed conversion, with every outcome traced back to the content recipe that produced it.</p>
+    </div>
+    <div class="analytics-head-actions"><span class="privacy-badge">{{ analytics_settings.tracking_mode|replace('_',' ') }}</span><a class="button secondary" href="{{ url_for('experiment_list') }}">Experiments</a><a class="button secondary" href="{{ url_for('analytics_settings_view') }}">Privacy settings</a><button class="button secondary" type="button" data-analytics-filter-toggle>Choose content <span class="selection-count">{{ selected_entities|length }}</span></button></div>
+  </div>
+
+  <div class="analytics-shortcuts">
+    <button type="button" data-open-picker="domains"><span>◎</span><strong>Domains</strong><small>Compare hostnames</small></button>
+    <button type="button" data-open-picker="pages"><span>▤</span><strong>Pages</strong><small>Compare website routes</small></button>
+    <button type="button" data-open-picker="articles"><span>≡</span><strong>Articles</strong><small>Compare editorial output</small></button>
+    <button type="button" data-focus-campaign><span>◉</span><strong>Campaigns</strong><small>Filter all analytics</small></button>
+  </div>
+
+  <form class="analytics-controls" method="get" action="{{ url_for('analytics_workspace') }}" data-analytics-form>
+    {% for entity in selected_entities %}<input type="hidden" name="entity" value="{{ entity }}" data-preserved-entity>{% endfor %}
+    <div class="date-presets" aria-label="Date presets">
+      <button type="submit" name="preset" value="today" class="preset-button">Today</button>
+      <button type="submit" name="preset" value="7d" class="preset-button">7 days</button>
+      <button type="submit" name="preset" value="30d" class="preset-button">30 days</button>
+      <button type="submit" name="preset" value="90d" class="preset-button">90 days</button>
+      <button type="submit" name="preset" value="this_month" class="preset-button">This month</button>
+      <button type="submit" name="preset" value="last_month" class="preset-button">Last month</button>
+    </div>
+    <label class="compact-field"><span>From</span><input type="date" name="from" value="{{ from_date }}"></label>
+    <label class="compact-field"><span>To</span><input type="date" name="to" value="{{ to_date }}"></label>
+    <label class="compact-field campaign-filter"><span>Campaign</span><select name="campaign_id" data-campaign-select><option value="">All campaigns</option>{% for c in campaigns %}<option value="{{ c._id }}" {{ 'selected' if c._id|string in selected_campaigns else '' }}>{{ c.title }}</option>{% endfor %}</select></label>
+    <button class="button primary" type="submit">Apply</button>
+  </form>
+
+  {% if selected_entities %}
+  <div class="active-selections">
+    <span>Comparing {{ selected_entities|length }} selected {{ 'item' if selected_entities|length == 1 else 'items' }}</span>
+    <a href="{{ url_for('analytics_workspace', from=from_date, to=to_date) }}">Clear selection</a>
+  </div>
+  {% endif %}
+
+  <div class="metric-grid analytics-metrics attribution-metrics">
+    <article class="metric-card"><span>Views</span><strong>{{ report.summary.views }}</strong><small>Public content exposures</small></article>
+    <article class="metric-card"><span>Unique visitors</span><strong>{{ report.summary.unique_visitors }}</strong><small>{{ 'Available after consent' if analytics_settings.tracking_mode == 'consent' else 'Privacy-preserving visitor IDs' }}</small></article>
+    <article class="metric-card accent"><span>Product clicks</span><strong>{{ report.summary.product_clicks }}</strong><small>{{ report.summary.product_ctr }}% of views</small></article>
+    <article class="metric-card success"><span>Confirmed conversions</span><strong>{{ report.summary.leads }}</strong><small>{{ report.summary.conversion_rate }}% of views</small></article>
+    <article class="metric-card"><span>Engagement</span><strong>{{ report.summary.engagement_rate }}%</strong><small>{{ report.summary.engaged_views }} engaged views</small></article>
+    <article class="metric-card"><span>Avg. reading time</span><strong>{{ report.summary.avg_duration_seconds }}s</strong><small>Per recorded view</small></article>
+  </div>
+
+  <article class="panel funnel-panel">
+    <div class="panel-head"><div><span class="eyebrow">Conversion path</span><h2>From attention to action</h2><p>Browser interactions are directional signals; confirmed conversions are recorded server-side when NJS receives the response.</p></div></div>
+    <div class="attribution-funnel">
+      <div><span>01</span><strong>{{ report.summary.views }}</strong><small>Views</small></div>
+      <i>→</i><div><span>02</span><strong>{{ report.summary.engaged_views }}</strong><small>Engaged</small></div>
+      <i>→</i><div><span>03</span><strong>{{ report.summary.cta_clicks }}</strong><small>CTA clicks</small></div>
+      <i>→</i><div><span>04</span><strong>{{ report.summary.form_starts }}</strong><small>Form starts</small></div>
+      <i>→</i><div class="is-conversion"><span>05</span><strong>{{ report.summary.leads }}</strong><small>Confirmed conversions</small></div>
+    </div>
+  </article>
+
+  <div class="analytics-grid analytics-grid-main">
+    <article class="panel analytics-trend-card">
+      <div class="panel-head"><div><span class="eyebrow">Traffic</span><h2>Views over time</h2></div><div class="chart-legend"><span><i class="legend-dot views"></i>Views</span><span><i class="legend-dot uniques"></i>Unique visitors</span></div></div>
+      <div class="analytics-chart-wrap"><canvas id="trafficTrend" height="280" aria-label="Traffic trend chart"></canvas></div>
+      {% if not report.summary.views %}<div class="chart-empty">No tracked views in this date range yet.</div>{% endif %}
+    </article>
+    <article class="panel device-card">
+      <div class="panel-head"><div><span class="eyebrow">Audience</span><h2>Devices</h2></div></div>
+      <div class="donut-layout"><canvas id="deviceChart" width="220" height="220"></canvas><div class="donut-legend">{% for row in report.devices %}<div><span>{{ row.label }}</span><strong>{{ row.value }}</strong><small>{{ row.pct }}%</small></div>{% else %}<div class="muted">No device data yet.</div>{% endfor %}</div></div>
+    </article>
+  </div>
+
+  <article class="panel comparison-card">
+    <div class="panel-head comparison-head">
+      <div><span class="eyebrow">Comparison</span><h2>Content performance</h2><p>Pages and articles are normalized to the same engagement metrics.</p></div>
+      <div class="sort-pills">
+        <a class="{{ 'active' if sort == 'views' else '' }}" href="{{ request.url|replace('sort=' ~ sort, 'sort=views') if 'sort=' in request.url else request.url ~ ('&' if '?' in request.url else '?') ~ 'sort=views' }}">Views</a>
+        <a class="{{ 'active' if sort == 'uniques' else '' }}" href="{{ request.url|replace('sort=' ~ sort, 'sort=uniques') if 'sort=' in request.url else request.url ~ ('&' if '?' in request.url else '?') ~ 'sort=uniques' }}">Uniques</a>
+        <a class="{{ 'active' if sort == 'engagement' else '' }}" href="{{ request.url|replace('sort=' ~ sort, 'sort=engagement') if 'sort=' in request.url else request.url ~ ('&' if '?' in request.url else '?') ~ 'sort=engagement' }}">Engagement</a>
+        <a class="{{ 'active' if sort == 'time' else '' }}" href="{{ request.url|replace('sort=' ~ sort, 'sort=time') if 'sort=' in request.url else request.url ~ ('&' if '?' in request.url else '?') ~ 'sort=time' }}">Time</a>
+        <a class="{{ 'active' if sort == 'clicks' else '' }}" href="{{ request.url|replace('sort=' ~ sort, 'sort=clicks') if 'sort=' in request.url else request.url ~ ('&' if '?' in request.url else '?') ~ 'sort=clicks' }}">Product clicks</a>
+        <a class="{{ 'active' if sort == 'conversions' else '' }}" href="{{ request.url|replace('sort=' ~ sort, 'sort=conversions') if 'sort=' in request.url else request.url ~ ('&' if '?' in request.url else '?') ~ 'sort=conversions' }}">Conversions</a>
+        <a class="{{ 'active' if sort == 'campaign' else '' }}" href="{{ request.url|replace('sort=' ~ sort, 'sort=campaign') if 'sort=' in request.url else request.url ~ ('&' if '?' in request.url else '?') ~ 'sort=campaign' }}">Campaign</a>
+      </div>
+    </div>
+    <div class="analytics-table-wrap">
+      <table class="analytics-table"><thead><tr><th>Content</th><th>Campaign</th><th>Views</th><th>Unique</th><th>Product clicks</th><th>Conversions</th><th>Conv. rate</th><th>Engagement</th><th>Avg. time</th></tr></thead><tbody>
+      {% for row in report.comparisons %}<tr><td><span class="entity-type">{{ row.type }}</span><strong>{{ row.label }}</strong></td><td class="campaign-cell">{{ row.campaign }}</td><td>{{ row.views }}</td><td>{{ row.unique_visitors }}</td><td>{{ row.product_clicks }}</td><td><strong>{{ row.leads }}</strong></td><td>{{ row.conversion_rate }}%</td><td>{{ row.engagement_rate }}%</td><td>{{ row.avg_duration_seconds }}s</td></tr>{% else %}<tr><td colspan="9"><div class="table-empty">No matching traffic yet. Publish content and visits will begin appearing here automatically.</div></td></tr>{% endfor %}
+      </tbody></table>
+    </div>
+  </article>
+
+  <section class="attribution-section">
+    <div class="section-heading"><div><span class="eyebrow">Attribution</span><h2>What is producing outcomes?</h2><p>Every generated article carries its Campaign, Product, Newsjack Worker and source-story lineage into the event stream.</p></div></div>
+    <div class="attribution-grid">
+      {% set attribution_groups = [('Campaigns', report.campaign_attribution, 'Audience and editorial direction'), ('Products', report.product_attribution, 'Offers receiving measurable interest'), ('Newsjack Workers', report.worker_attribution, 'Automation recipes creating results'), ('Source stories', report.source_attribution, 'News hooks that led to outcomes')] %}
+      {% for title, rows, subtitle in attribution_groups %}
+      <article class="panel attribution-card"><div class="panel-head"><div><span class="eyebrow">{{ subtitle }}</span><h3>{{ title }}</h3></div></div><div class="analytics-table-wrap"><table class="analytics-table compact"><thead><tr><th>Name</th><th>Views</th><th>Clicks</th><th>Conversions</th><th>Rate</th></tr></thead><tbody>{% for row in rows[:10] %}<tr><td><strong>{{ row.name }}</strong></td><td>{{ row.views }}</td><td>{{ row.product_clicks }}</td><td><strong>{{ row.leads }}</strong></td><td>{{ row.conversion_rate }}%</td></tr>{% else %}<tr><td colspan="5"><div class="table-empty">No attributed activity yet.</div></td></tr>{% endfor %}</tbody></table></div></article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <div class="analytics-grid analytics-breakdowns">
+    {% set groups = [('Channels', report.channels, 'Acquisition channel'), ('Regions', report.regions, 'Where viewers are'), ('Countries', report.countries, 'Country distribution'), ('Referrers', report.referrers, 'How visitors arrive'), ('Browsers', report.browsers, 'Browser mix'), ('Operating systems', report.operating_systems, 'OS mix')] %}
+    {% for title, rows, subtitle in groups %}
+    <article class="panel breakdown-card"><div class="panel-head"><div><span class="eyebrow">{{ subtitle }}</span><h2>{{ title }}</h2></div></div><div class="bar-list">{% for row in rows %}<div class="bar-row"><div class="bar-label"><span title="{{ row.label }}">{{ row.label }}</span><strong>{{ row.value }}</strong></div><div class="bar-track"><i style="width:{{ row.pct }}%"></i></div><small>{{ row.pct }}%</small></div>{% else %}<div class="chart-empty compact">No data yet.</div>{% endfor %}</div></article>
+    {% endfor %}
+  </div>
+
+  <aside class="analytics-picker" data-analytics-picker hidden aria-label="Choose analytics content">
+    <div class="picker-head"><div><span class="eyebrow">Comparison builder</span><h2>Choose what to analyze</h2></div><button type="button" class="icon-button" data-analytics-filter-close aria-label="Close">×</button></div>
+    <div class="picker-tabs" role="tablist"><button type="button" class="active" data-picker-tab="domains">Domains</button><button type="button" data-picker-tab="pages">Pages</button><button type="button" data-picker-tab="articles">Articles</button></div>
+    <form method="get" action="{{ url_for('analytics_workspace') }}" class="picker-form">
+      <input type="hidden" name="from" value="{{ from_date }}"><input type="hidden" name="to" value="{{ to_date }}">
+      {% for cid in selected_campaigns %}<input type="hidden" name="campaign_id" value="{{ cid }}">{% endfor %}
+      <div class="picker-search"><input type="search" placeholder="Search domains, pages or articles" data-picker-search></div>
+      <div class="picker-pane active" data-picker-pane="domains">{% for d in domains %}<label class="picker-item" data-picker-label="{{ d.domain|lower }}"><input type="checkbox" name="entity" value="{{ d.key }}" {{ 'checked' if d.key in selected_entities else '' }}><span class="picker-icon">◎</span><span class="picker-copy"><strong>{{ d.domain }}</strong><span class="picker-meta"><span class="picker-kind">Domain</span><span>{{ 'Internal website' if d.internal else d.status }}</span></span></span></label>{% endfor %}</div>
+      <div class="picker-pane" data-picker-pane="pages">{% for p in pages %}<label class="picker-item" data-picker-label="{{ (p.title ~ ' ' ~ p.campaign)|lower }}"><input type="checkbox" name="entity" value="{{ p.key }}" {{ 'checked' if p.key in selected_entities else '' }}><span class="picker-icon">▤</span><span class="picker-copy"><strong>{{ p.title }}</strong><span class="picker-meta"><span class="picker-kind">Page</span>{% if p.campaign %}<span>{{ p.campaign }}</span>{% endif %}{% if p.routes %}<span class="picker-route">{{ p.routes[0].domain }}{{ p.routes[0].path }}</span>{% endif %}</span></span></label>{% else %}<div class="picker-empty">No pages yet.</div>{% endfor %}</div>
+      <div class="picker-pane" data-picker-pane="articles">{% for a in article_entities %}<label class="picker-item" data-picker-label="{{ (a.title ~ ' ' ~ a.campaign)|lower }}"><input type="checkbox" name="entity" value="{{ a.key }}" {{ 'checked' if a.key in selected_entities else '' }}><span class="picker-icon">≡</span><span class="picker-copy"><strong>{{ a.title }}</strong><span class="picker-meta"><span class="picker-kind">Article</span>{% if a.campaign and a.campaign != 'No campaign' %}<span>{{ a.campaign }}</span>{% endif %}</span></span></label>{% else %}<div class="picker-empty">No articles yet.</div>{% endfor %}</div>
+      <div class="picker-footer"><button class="button secondary" type="button" data-picker-clear>Clear</button><button class="button primary" type="submit">Compare selected</button></div>
+    </form>
+  </aside>
+  <div class="analytics-picker-backdrop" data-analytics-picker-backdrop hidden></div>
+</section>
+<script type="application/json" id="analyticsTrendData">{{ report.trend|tojson }}</script>
+<script type="application/json" id="analyticsDeviceData">{{ report.devices|tojson }}</script>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){
+  const root=document.querySelector('[data-analytics-root]'); if(!root)return;
+  const picker=root.querySelector('[data-analytics-picker]'), backdrop=root.querySelector('[data-analytics-picker-backdrop]');
+  function setPicker(open){picker.hidden=!open;backdrop.hidden=!open;document.body.classList.toggle('analytics-picker-open',open);}
+  root.querySelector('[data-analytics-filter-toggle]')?.addEventListener('click',()=>setPicker(true));
+  root.querySelectorAll('[data-open-picker]').forEach(btn=>btn.addEventListener('click',()=>{setPicker(true);const tab=root.querySelector('[data-picker-tab="'+btn.dataset.openPicker+'"]');tab?.click();}));
+  root.querySelector('[data-focus-campaign]')?.addEventListener('click',()=>{const el=root.querySelector('[data-campaign-select]');el?.focus();el?.scrollIntoView({behavior:'smooth',block:'center'});});
+  root.querySelector('[data-analytics-filter-close]')?.addEventListener('click',()=>setPicker(false));backdrop?.addEventListener('click',()=>setPicker(false));
+  root.querySelectorAll('[data-picker-tab]').forEach(btn=>btn.addEventListener('click',()=>{root.querySelectorAll('[data-picker-tab]').forEach(x=>x.classList.toggle('active',x===btn));root.querySelectorAll('[data-picker-pane]').forEach(p=>p.classList.toggle('active',p.dataset.pickerPane===btn.dataset.pickerTab));}));
+  root.querySelector('[data-picker-search]')?.addEventListener('input',e=>{const q=e.target.value.toLowerCase().trim();root.querySelectorAll('[data-picker-label]').forEach(x=>x.hidden=!!q&&!x.dataset.pickerLabel.includes(q));});
+  root.querySelector('[data-picker-clear]')?.addEventListener('click',()=>root.querySelectorAll('.picker-form input[name="entity"]').forEach(x=>x.checked=false));
+
+  function setupCanvas(canvas){const dpr=Math.max(1,window.devicePixelRatio||1),rect=canvas.getBoundingClientRect(),h=Number(canvas.getAttribute('height')||280);canvas.width=Math.max(1,rect.width*dpr);canvas.height=h*dpr;canvas.style.height=h+'px';const c=canvas.getContext('2d');c.scale(dpr,dpr);return {c,w:rect.width,h};}
+  function lineChart(){const el=document.getElementById('trafficTrend'); if(!el)return;const data=JSON.parse(document.getElementById('analyticsTrendData').textContent||'{}'),{c,w,h}=setupCanvas(el),pad={l:40,r:16,t:18,b:34};const vals=[...(data.views||[]),...(data.uniques||[])],max=Math.max(1,...vals),cw=w-pad.l-pad.r,ch=h-pad.t-pad.b;c.clearRect(0,0,w,h);c.strokeStyle='#e7e9ee';c.lineWidth=1;c.fillStyle='#8b91a1';c.font='11px system-ui';for(let i=0;i<=4;i++){let y=pad.t+ch*i/4;c.beginPath();c.moveTo(pad.l,y);c.lineTo(w-pad.r,y);c.stroke();c.fillText(String(Math.round(max*(1-i/4))),4,y+4);}function draw(arr,color){c.strokeStyle=color;c.lineWidth=2.5;c.lineJoin='round';c.lineCap='round';c.beginPath();arr.forEach((v,i)=>{let x=pad.l+(arr.length<=1?0:cw*i/(arr.length-1)),y=pad.t+ch-(v/max*ch);i?c.lineTo(x,y):c.moveTo(x,y)});c.stroke();}draw(data.views||[],'#5b57db');draw(data.uniques||[],'#8b87e9');const labels=data.labels||[];if(labels.length){c.fillStyle='#8b91a1';const indexes=[0,Math.floor((labels.length-1)/2),labels.length-1];indexes.forEach((idx,j)=>{let x=pad.l+(labels.length<=1?0:cw*idx/(labels.length-1));c.fillText(labels[idx].slice(5),Math.max(2,x-(j===2?34:12)),h-9);});}}
+  function donut(){const el=document.getElementById('deviceChart');if(!el)return;const data=JSON.parse(document.getElementById('analyticsDeviceData').textContent||'[]'),{c,w,h}=setupCanvas(el),total=data.reduce((a,b)=>a+b.value,0),cx=w/2,cy=h/2,r=Math.min(w,h)*.34,colors=['#5b57db','#8b87e9','#12b76a','#f79009','#e5484d','#00a2c7'];c.clearRect(0,0,w,h);if(!total){c.strokeStyle='#eceef2';c.lineWidth=24;c.beginPath();c.arc(cx,cy,r,0,Math.PI*2);c.stroke();return;}let start=-Math.PI/2;data.forEach((row,i)=>{let end=start+Math.PI*2*(row.value/total);c.strokeStyle=colors[i%colors.length];c.lineWidth=24;c.beginPath();c.arc(cx,cy,r,start,end);c.stroke();start=end;});c.fillStyle='#111827';c.textAlign='center';c.font='700 27px system-ui';c.fillText(String(total),cx,cy+4);c.fillStyle='#8b91a1';c.font='12px system-ui';c.fillText('views',cx,cy+24);}
+  lineChart();donut();let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{lineChart();donut();},120)});
+})();
+</script>
+{% endblock %}

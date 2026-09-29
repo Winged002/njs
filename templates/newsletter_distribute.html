@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Distribute newsletters · Newsjacking{% endblock %}
+{% block workspace_context %}<span>/</span><strong>Distribute</strong>{% endblock %}
+{% block content %}
+<div class="newsletter-page newsletter-distribute-page">
+  <div class="page-head newsletter-page-head"><div><div class="eyebrow">Newsletters</div><h1>Distribute</h1><p>Choose an approved edition, verify the audience, then create a Mailchimp draft or send through BlackBook. Eligibility and suppression are rechecked at delivery time.</p></div>{% if selected %}<a class="secondary button-link" href="{{ url_for('newsletter_edition_detail', edition_id=selected._id) }}">Back to edition</a>{% endif %}</div>
+
+  <div class="detail-workspace newsletter-distribution-workspace">
+    <aside class="detail-side newsletter-distribution-side">
+      <section class="side-card">
+        <div class="side-card-head"><div><span class="summary-kicker">READY QUEUE</span><h3>Approved editions</h3></div><span class="count-pill">{{ ready_editions|length }}</span></div>
+        <div class="side-link-list newsletter-queue-list">{% for e in ready_editions %}<a class="{{ 'is-active' if selected and selected._id == e._id else '' }}" href="{{ url_for('newsletter_distribute', edition=e._id) }}"><span><strong>{{ e.subject or e.schedule_name or 'Newsletter' }}</strong><small>{{ e.due_at|dt }} · {{ e.story_count or 0 }} stories</small></span><b>→</b></a>{% else %}<div class="side-empty">No approved editions. Mark a reviewed edition Ready first.</div>{% endfor %}</div>
+      </section>
+      {% if distributed_editions %}<section class="side-card"><div class="side-card-head"><div><span class="summary-kicker">HISTORY</span><h3>Recent deliveries</h3></div></div><div class="side-link-list">{% for e in distributed_editions[:6] %}<a href="{{ url_for('newsletter_distribute', edition=e._id) }}"><span><strong>{{ e.subject or 'Newsletter' }}</strong><small>{{ e.due_at|dt }}</small></span><b>→</b></a>{% endfor %}</div></section>{% endif %}
+    </aside>
+
+    <main class="detail-main newsletter-distribution-main">
+      {% if selected %}{% set schedule=selected_schedule %}
+        <section class="builder-card">
+          <div class="builder-section-head"><span class="builder-index">01</span><div><h2>{{ selected.subject or schedule.name or 'Newsletter edition' }}</h2><p>{{ selected.preheader or 'No preheader set.' }}</p></div><span class="badge {{ selected.status }}">{{ selected.status }}</span></div>
+          <div class="newsletter-delivery-summary"><div><span>Newsletter</span><strong>{{ schedule.name if schedule else '—' }}</strong></div><div><span>Stories</span><strong>{{ selected.story_count or 0 }}</strong></div><div><span>Due</span><strong>{{ selected.due_at|dt }}</strong></div><div><span>Status</span><strong>{{ selected.status|title }}</strong></div></div>
+          <div class="form-actions newsletter-preview-actions"><a class="secondary button-link" target="_blank" href="{{ url_for('newsletter_edition_preview', edition_id=selected._id) }}">Preview exact email ↗</a><a class="quiet button-link" href="{{ url_for('newsletter_edition_detail', edition_id=selected._id) }}">Open editor</a></div>
+        </section>
+
+        {% if selected.status == 'distributed' and selected.distribution %}<section class="builder-card newsletter-delivered-card"><div class="builder-section-head"><span class="builder-index">✓</span><div><h2>Delivery recorded</h2><p>{{ selected.distribution.provider or 'External delivery' }} · {{ selected.distribution.recipient_count or 0 }} recipients · {{ selected.distribution.delivered_at|dt if selected.distribution.delivered_at else '' }}</p></div></div><div class="newsletter-reference-row"><span>External reference</span><strong>{{ selected.distribution.external_reference or '—' }}</strong></div></section>{% endif %}
+
+        <section class="builder-card newsletter-blackbook-delivery">
+          <div class="builder-section-head"><span class="builder-index">02</span><div><h2>Audience and delivery</h2><p>BlackBook owns the people directory, consent, enrichment, engagement, segments and Mailchimp credentials.</p></div><span class="connection-pill {{ 'online' if blackbook.connected else 'offline' }}"><span></span>{{ 'Connected' if blackbook.connected else 'Unavailable' }}</span></div>
+          {% if not blackbook.connected %}
+            <div class="empty-callout compact"><strong>BlackBook is unavailable.</strong><span>{{ blackbook.error }}</span><a class="secondary button-link" href="{{ url_for('blackbook_integration') }}">Configure BlackBook</a></div>
+          {% else %}
+            {% set preview=blackbook.preview or {} %}{% set pc=preview.counts or {} %}{% set mc=(blackbook.context or {}).mailchimp or {} %}
+            <div class="newsletter-delivery-summary newsletter-audience-summary"><div><span>Eligible</span><strong>{{ pc.eligible or 0 }}</strong><small>{{ pc.selected or 0 }} selected</small></div><div><span>Blocked</span><strong>{{ pc.blocked or 0 }}</strong><small>Suppressed</small></div><div><span>Analyzed</span><strong>{{ pc.analyzed or 0 }}</strong><small>{{ preview.average_relationship_strength or 0 }} avg relationship</small></div><div><span>Mailchimp</span><strong>{{ 'Ready' if mc.configured else 'Setup needed' }}</strong><small>{{ pc.subscribed or 0 }} subscribed</small></div></div>
+            {% if preview.categories %}<div class="audience-category-cloud newsletter-category-cloud">{% for c in preview.categories[:8] %}<span>{{ c.name }} <b>{{ c.count }}</b></span>{% endfor %}</div>{% endif %}
+            {% if selected.blackbook_mailchimp_draft %}<div class="notice info newsletter-inline-notice"><strong>Mailchimp draft already created.</strong> Campaign {{ selected.blackbook_mailchimp_draft.campaign_id }} · {{ selected.blackbook_mailchimp_draft.recipient_count or 0 }} recipients. Finish or send that draft in BlackBook/Mailchimp to avoid creating a duplicate campaign.</div>{% endif %}
+            {% if selected.status == 'distributed' %}<div class="notice success newsletter-inline-notice"><strong>This edition is already distributed.</strong> NJS will not create another Mailchimp campaign unless the delivery record is cleared or the edition changes.</div>{% elif selected.blackbook_mailchimp_draft %}{% elif mc.configured and (pc.eligible or 0) > 0 %}
+              <form method="post" action="{{ url_for('newsletter_blackbook_distribute', edition_id=selected._id) }}" class="newsletter-delivery-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label>Reply-to email<input type="email" name="reply_to" required placeholder="newsletter@yourdomain.com"><small>Used by BlackBook for campaign creation. NJS never receives the Mailchimp API key.</small></label><div class="newsletter-send-choice"><label><input type="radio" name="action" value="draft" checked><span><strong>Create Mailchimp draft</strong><small>Build the audience and campaign without sending.</small></span></label><label class="danger-choice"><input type="radio" name="action" value="send"><span><strong>Send now via BlackBook</strong><small>Revalidate recipients and ask Mailchimp to send immediately.</small></span></label></div><div class="detail-save-bar newsletter-send-bar"><div><strong>BlackBook will validate the audience again.</strong><span>Contact suppression and eligibility always take precedence.</span></div><button class="primary" type="submit">Continue with BlackBook</button></div></form>
+            {% elif not mc.configured %}<div class="notice warning newsletter-inline-notice"><strong>Mailchimp is not configured in BlackBook.</strong> Connect the organization’s Mailchimp audience before direct distribution.</div>{% else %}<div class="notice warning newsletter-inline-notice"><strong>No eligible audience.</strong> Return to Audience and select a BlackBook segment or eligible contacts.</div>{% endif %}
+          {% endif %}
+        </section>
+
+        <section class="builder-card newsletter-export-card"><div class="builder-section-head"><span class="builder-index">03</span><div><h2>Manual export</h2><p>Download the exact HTML/text package for another provider or an offline approval path.</p></div><a class="secondary button-link" href="{{ url_for('newsletter_distribution_package', edition_id=selected._id) }}">Download package</a></div></section>
+      {% else %}
+        <div class="empty-callout"><strong>Select a ready edition.</strong><span>Approved newsletters appear in the queue.</span><a class="primary button-link" href="{{ url_for('newsletter_view') }}">Open Review</a></div>
+      {% endif %}
+    </main>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Analytics privacy · {{ app_name }}{% endblock %}
+{% block workspace_context %}<span>/</span><a href="{{ url_for('analytics_workspace') }}">Analytics</a><span>/</span><strong>Privacy</strong>{% endblock %}
+{% block content %}
+<section class="settings-page attribution-settings-page">
+  <div class="page-head">
+    <div><div class="eyebrow">FIRST-PARTY MEASUREMENT</div><h1>Analytics privacy</h1><p>Choose how public sites measure audience behavior. Attribution remains first-party and scoped to this Syntal organization.</p></div>
+    <a class="secondary button-link" href="{{ url_for('analytics_workspace') }}">← Analytics</a>
+  </div>
+  <form method="post" class="settings-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <section class="panel focus-panel">
+      <div class="section-number">01</div>
+      <div class="field-copy"><h2>Tracking mode</h2><p>Select the level of measurement appropriate for this organization's public websites.</p></div>
+      <div class="privacy-mode-grid">
+        <label class="privacy-mode-card"><input type="radio" name="tracking_mode" value="pseudonymous" {{ 'checked' if settings.tracking_mode == 'pseudonymous' else '' }}><span><strong>Pseudonymous</strong><small>Recommended. Uses a first-party random visitor token for unique visitors, reading behavior, CTA attribution and conversions. No advertising identifier.</small></span></label>
+        <label class="privacy-mode-card"><input type="radio" name="tracking_mode" value="consent" {{ 'checked' if settings.tracking_mode == 'consent' else '' }}><span><strong>Consent required</strong><small>Records aggregate page loads before consent. Reading behavior, persistent visitor IDs and interaction attribution start only after the reader opts in.</small></span></label>
+        <label class="privacy-mode-card"><input type="radio" name="tracking_mode" value="aggregate" {{ 'checked' if settings.tracking_mode == 'aggregate' else '' }}><span><strong>Aggregate only</strong><small>Counts page loads without a persistent visitor token or behavioral interaction tracking. Unique visitor and conversion journeys are intentionally unavailable.</small></span></label>
+      </div>
+    </section>
+    <section class="panel focus-panel">
+      <div class="section-number">02</div>
+      <div class="field-copy"><h2>Consent message</h2><p>Used only when <strong>Consent required</strong> is selected.</p></div>
+      <div class="form-grid">
+        <label><span>Title</span><input name="consent_title" maxlength="120" value="{{ settings.consent_title }}"></label>
+        <label><span>Message</span><textarea name="consent_text" rows="4" maxlength="1000">{{ settings.consent_text }}</textarea></label>
+      </div>
+    </section>
+    <div class="submit-dock"><div><strong>Organization-wide setting</strong><span>Applies to public articles and generated website pages on their next visit.</span></div><button class="primary" type="submit">Save privacy settings</button></div>
+  </form>
+</section>
+{% endblock %}

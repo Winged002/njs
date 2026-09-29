@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Article review queue · Newsjacking{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="eyebrow">CONTENT · GOVERNED PUBLISHING</div><h1>Article review queue</h1><p>Generated and revised articles remain private until a member of the target organization signs the current revision.</p></div><div class="actions"><a class="secondary button-link" href="{{ url_for('article_list') }}">All articles</a>{% if not profile.completed %}<a class="primary button-link" href="{{ url_for('author_profile_settings', next=url_for('article_review_queue')) }}">Complete author profile</a>{% endif %}</div></div>
+{% if not profile.completed %}<div class="notice warning author-setup-notice"><strong>Signing is locked for your account.</strong><span>Add your full name and picture to your author profile. You can still review articles and request changes.</span></div>{% endif %}
+<section class="panel">
+  <div class="panel-head"><div><h2>Awaiting sign-off</h2><p class="muted">The queue is shared with members of your current organization.</p></div><span class="count-pill">{{ articles|length }}</span></div>
+  {% if articles %}<div class="review-queue-list">
+  {% for article in articles %}
+    <a class="review-queue-card" href="{{ url_for('article_detail', article_id=article._id) }}">
+      <div class="review-state-icon">{{ '↻' if article.review_status in ['changes_queued','changes_processing'] else '✓' }}</div>
+      <div class="review-queue-copy"><strong>{{ article.metadata.title if article.metadata and article.metadata.title else 'Untitled article' }}</strong><span>{{ article.created_at|dt }} · Revision {{ article.revision or 1 }}{% if article.published_revision %} · Revision {{ article.published_revision }} remains public{% endif %}</span></div>
+      <div class="review-queue-status"><span class="badge {{ article.review_status or 'pending_review' }}">{{ (article.review_status or 'pending_review')|replace('_',' ') }}</span>{% if article.quality %}<small>Q{{ article.quality.score }}</small>{% endif %}</div>
+    </a>
+  {% endfor %}
+  </div>{% else %}<div class="empty-callout"><strong>Review queue clear.</strong><span>New generated articles and unsigned revisions will appear here automatically.</span></div>{% endif %}
+</section>
+{% endblock %}

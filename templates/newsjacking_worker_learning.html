@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Learning · {{ worker.name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="eyebrow">WORKER INTELLIGENCE</div><h1>{{ worker.name }}</h1><p>Measured performance from this Worker’s own published output. Learning uses first-party attribution and never overrides Campaign, evidence, Product eligibility, or factual relevance.</p></div><div class="actions"><a class="secondary button-link" href="{{ url_for('newsjacking_worker_detail', worker_id=worker._id) }}">Worker settings</a><form method="post" action="{{ url_for('newsjacking_worker_learning_refresh', worker_id=worker._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="primary" type="submit">Refresh learning</button></form></div></div>
+
+<section class="learning-hero panel">
+  <div class="learning-status-row">
+    <div><span class="eyebrow">{{ (worker.learning_mode or 'observe')|upper }} MODE</span><h2>{{ 'Learning is ready' if learning.ready else 'Collecting a reliable sample' }}</h2><p class="muted">Objective: {{ (learning.objective or 'conversion_rate')|replace('_',' ') }} · {{ learning.lookback_days or 90 }}-day lookback · minimum {{ learning.min_views or 80 }} views.</p></div>
+    <span class="learning-ready-pill {{ 'is-ready' if learning.ready else '' }}">{{ 'Ready to adapt' if learning.ready else ((learning.sample or {}).views or 0)|string ~ ' / ' ~ ((learning.min_views or 80)|string) ~ ' views' }}</span>
+  </div>
+  <div class="learning-kpis">
+    <div><span>Views</span><strong>{{ (learning.sample or {}).views or 0 }}</strong></div>
+    <div><span>Articles measured</span><strong>{{ (learning.sample or {}).articles or 0 }}</strong></div>
+    <div><span>Engagement</span><strong>{{ (learning.overall or {}).engagement_rate or 0 }}%</strong></div>
+    <div><span>Product CTR</span><strong>{{ (learning.overall or {}).product_ctr or 0 }}%</strong></div>
+    <div><span>Conversion rate</span><strong>{{ (learning.overall or {}).conversion_rate or 0 }}%</strong></div>
+  </div>
+</section>
+
+<div class="learning-layout">
+  <main class="learning-main">
+    <section class="panel"><div class="panel-head"><div><span class="eyebrow">RECOMMENDATIONS</span><h2>What the Worker has learned</h2><p class="muted">Every recommendation is bounded by measured outcomes. Weak samples remain observations rather than automatic changes.</p></div></div>
+      <div class="learning-recommendations">{% for rec in learning.recommendations or [] %}<article class="learning-rec"><span class="learning-rec-icon">{{ '↗' if rec.actionable else '○' }}</span><div><strong>{{ rec.title }}</strong><p>{{ rec.detail }}</p></div>{% if rec.actionable %}<span class="badge signed">actionable</span>{% endif %}</article>{% else %}<div class="empty-callout compact"><strong>No recommendation yet.</strong><span>Refresh after this Worker has measurable public traffic.</span></div>{% endfor %}</div>
+      {% if learning.ready %}<form class="learning-apply" method="post" action="{{ url_for('newsjacking_worker_learning_apply', worker_id=worker._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label class="toggle-row"><span><strong>Apply recommended confidence threshold</strong><small>Current {{ '%.2f'|format(worker.min_confidence or 0.68) }} → recommended {{ '%.2f'|format((learning.policy or {}).recommended_min_confidence or (worker.min_confidence or 0.68)) }}</small></span><input type="checkbox" name="apply_confidence"></label><label class="toggle-row"><span><strong>Enable Adaptive mode</strong><small>Use bounded source/freshness/topic/Product tie-breakers automatically. The factual relevance gate remains mandatory.</small></span><input type="checkbox" name="enable_adaptive"></label><button class="primary" type="submit">Apply selected changes</button></form>{% endif %}
+    </section>
+
+    <section class="panel"><div class="panel-head"><div><span class="eyebrow">SOURCE PERFORMANCE</span><h2>Which feeds create outcomes</h2><p class="muted">The adaptive engine uses only a small source bias. A high-performing feed cannot make an irrelevant story eligible.</p></div></div><div class="analytics-table-wrap"><table class="analytics-table"><thead><tr><th>Source</th><th>Views</th><th>Engagement</th><th>Product CTR</th><th>Conversions</th><th>Objective</th></tr></thead><tbody>{% for row in learning.sources or [] %}<tr><td><strong>{{ row.name }}</strong></td><td>{{ row.views }}</td><td>{{ row.engagement_rate }}%</td><td>{{ row.product_ctr }}%</td><td>{{ row.converted_journeys }}</td><td><strong>{{ row.objective_rate }}%</strong></td></tr>{% else %}<tr><td colspan="6"><div class="table-empty">No source performance data yet.</div></td></tr>{% endfor %}</tbody></table></div></section>
+
+    <section class="panel"><div class="panel-head"><div><span class="eyebrow">PRODUCT PERFORMANCE</span><h2>Which Products earn interest</h2><p class="muted">Product clicks and directly attributable conversions are weighted more heavily than mere eligibility in an article.</p></div></div><div class="analytics-table-wrap"><table class="analytics-table"><thead><tr><th>Product</th><th>Views</th><th>Product clicks</th><th>CTR</th><th>Conversions</th><th>Objective</th></tr></thead><tbody>{% for row in learning.products or [] %}<tr><td><strong>{{ row.name }}</strong></td><td>{{ row.views }}</td><td>{{ row.product_clicks }}</td><td>{{ row.product_ctr }}%</td><td>{{ row.converted_journeys }}</td><td><strong>{{ row.objective_rate }}%</strong></td></tr>{% else %}<tr><td colspan="6"><div class="table-empty">No Product performance data yet.</div></td></tr>{% endfor %}</tbody></table></div></section>
+
+    <div class="learning-two-col">
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">MATCH QUALITY</span><h2>Confidence bands</h2></div></div><div class="learning-band-list">{% for row in learning.confidence_bands or [] %}<div><span><strong>{{ row.name }}</strong><small>{{ row.views }} views</small></span><b>{{ row.objective_rate }}%</b></div>{% else %}<div class="table-empty">No confidence data.</div>{% endfor %}</div></section>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">FRESHNESS</span><h2>Story age</h2></div></div><div class="learning-band-list">{% for row in learning.freshness_bands or [] %}<div><span><strong>{{ row.name }}</strong><small>{{ row.views }} views</small></span><b>{{ row.objective_rate }}%</b></div>{% else %}<div class="table-empty">No freshness data.</div>{% endfor %}</div></section>
+    </div>
+  </main>
+
+  <aside class="learning-aside">
+    <section class="panel"><div class="panel-head"><div><span class="eyebrow">LEARNED POLICY</span><h2>Current bounded signals</h2></div></div>{% set policy=learning.policy or {} %}<dl class="learning-policy"><div><dt>Suggested threshold</dt><dd>{{ '%.2f'|format(policy.recommended_min_confidence or worker.min_confidence or 0.68) }}</dd></div><div><dt>Freshness window</dt><dd>{{ (policy.max_story_age_hours|string ~ 'h') if policy.max_story_age_hours else 'No hard window' }}</dd></div><div><dt>Source weights</dt><dd>{{ (policy.source_weights or {})|length }}</dd></div><div><dt>Product weights</dt><dd>{{ (policy.product_weights or {})|length }}</dd></div></dl></section>
+    <section class="panel"><div class="panel-head"><div><span class="eyebrow">TOPIC SIGNALS</span><h2>Recurring terms</h2></div></div><div class="topic-signal-group"><strong>Positive history</strong><div class="chip-row">{% for row in learning.positive_terms or [] %}<span class="learning-chip positive">{{ row.term }} <small>{{ row.lift }}×</small></span>{% else %}<span class="muted">Not enough repeated topics yet.</span>{% endfor %}</div></div><div class="topic-signal-group"><strong>Weak history</strong><div class="chip-row">{% for row in learning.negative_terms or [] %}<span class="learning-chip negative">{{ row.term }} <small>{{ row.lift }}×</small></span>{% else %}<span class="muted">No reliable negative signal.</span>{% endfor %}</div></div></section>
+    <section class="notice info"><strong>Adaptive does not mean autonomous promotion.</strong><span>The Worker can tighten or lightly bias ranking, but every story must still pass the Campaign relevance check and every Product must still have a defensible contextual connection.</span></section>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} · Page preview{% endblock %}
+{% block content %}
+<div class="page-head" data-live-watch data-live-scope="page" data-live-id="{{ page._id }}">
+<div><div class="eyebrow">AI GENERATED PAGE · REVISION {{ page.revision or 0 }}</div><h1>{{ page.title }}</h1><p>{{ campaign.title if campaign else '' }}</p></div>
+<div class="actions">
+<form method="post" action="{{ url_for('page_regenerate', page_id=page._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary">Regenerate full page</button></form>
+<form method="post" action="{{ url_for('page_publish', page_id=page._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="primary">{{ 'Publish changes' if page.published and (page.published_revision or 0) != (page.revision or 0) else ('Unpublish' if page.published else 'Publish') }}</button></form>
+</div></div>
+
+{% if routes %}
+<div class="published-route-strip">
+  <div><span>Custom domain routing</span><strong>{{ routes|length }} mapped {{ 'path' if routes|length == 1 else 'paths' }}</strong></div>
+  <div class="published-route-links">{% for route in routes %}<a href="{{ route.public_url }}" target="_blank" rel="noopener" class="route-live-link {{ 'is-live' if route.domain_live and page.published else '' }}"><i></i>{{ route.domain }}{{ route.path }}</a>{% endfor %}</div>
+</div>
+{% endif %}
+
+<div class="preview-layout">
+  <section class="panel preview-panel">
+    <div class="preview-toolbar"><div><strong>Rendered preview</strong><span id="viewportLabel">Desktop</span></div><div class="viewport-switch"><button type="button" class="active" data-viewport="desktop">Desktop</button><button type="button" data-viewport="tablet">Tablet</button><button type="button" data-viewport="mobile">Mobile</button>{% if page.html %}<a target="_blank" href="{{ url_for('page_preview', page_id=page._id) }}">Open ↗</a>{% endif %}</div></div>
+    <div class="preview-stage" id="previewStage" data-viewport="desktop">{% if page.html %}<iframe title="Generated landing page preview" src="{{ url_for('page_preview', page_id=page._id) }}"></iframe>{% else %}<div class="preview-empty">{% if page.generation_status == 'failed' %}Generation failed.{% else %}NJS is generating the complete page from campaign, website, visual and article context.{% endif %}</div>{% endif %}</div>
+  </section>
+  <aside class="panel page-inspector">
+    <div class="panel-head"><h2>Page status</h2><span class="badge">{{ 'published' if page.published else page.generation_status }}</span></div>
+    <dl class="details">
+      <div><dt>Campaign</dt><dd>{{ campaign.title if campaign else '—' }}</dd></div>
+      <div><dt>Revision</dt><dd>{{ page.revision or 0 }}</dd></div>
+      <div><dt>Generated</dt><dd>{{ page.generated_at|dt }}</dd></div>
+      {% if page.quality %}<div><dt>Quality audit</dt><dd>{{ page.quality.score }}/100</dd></div>{% endif %}
+      {% if page.published %}<div><dt>NJS public URL</dt><dd><a target="_blank" href="{{ url_for('published_page', public_id=page.public_id, _external=True) }}">Open public page ↗</a></dd></div>{% endif %}
+    </dl>
+    {% if page.generation_error %}<div class="flash danger">{{ page.generation_error }}</div>{% endif %}
+    {% if page.metadata %}<div class="generated-copy"><span class="eyebrow">SEO / SHARE</span><h3>{{ page.metadata.title }}</h3><p>{{ page.metadata.meta_description }}</p>{% if page.metadata.primary_keyword %}<span class="badge">{{ page.metadata.primary_keyword }}</span>{% endif %}</div>{% endif %}
+    {% if page.design_plan %}<hr><details class="inspector-details"><summary>Design plan</summary><p><strong>{{ page.design_plan.audience_promise }}</strong></p><p class="muted">{{ page.design_plan.visual_direction }}</p>{% if page.design_plan.sections %}<ol>{% for section in page.design_plan.sections %}<li><strong>{{ section.name }}</strong><br><span class="muted">{{ section.purpose }}</span></li>{% endfor %}</ol>{% endif %}</details>{% endif %}
+    {% if page.visual_assets %}<hr><details class="inspector-details"><summary>Visual assets ({{ page.visual_assets|length }})</summary><div class="asset-grid">{% for asset in page.visual_assets %}<a href="{{ asset.url }}" target="_blank" rel="noopener"><img src="{{ asset.url }}" alt="{{ asset.alt or '' }}"></a>{% endfor %}</div></details>{% endif %}
+    {% if versions %}<hr><details class="inspector-details"><summary>Previous revisions ({{ versions|length }})</summary><div class="revision-list">{% for version in versions %}<form method="post" action="{{ url_for('page_restore_version', page_id=page._id, version_id=version._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><div><strong>Revision {{ version.revision }}</strong><span>{{ version.created_at|dt }} · {{ version.reason }}</span></div><button class="secondary" type="submit">Restore</button></form>{% endfor %}</div></details>{% endif %}
+  </aside>
+</div>
+
+<section class="panel routing-panel">
+  <div class="panel-head"><div><h2>Custom domain paths</h2><p class="muted">Map this generated page to a connected hostname. The domain must be active before the path becomes publicly resolvable.</p></div><a class="secondary button-link" href="{{ url_for('domains_workspace') }}">Manage DNS</a></div>
+  {% if domains %}
+  <form method="post" action="{{ url_for('page_add_route', page_id=page._id) }}" class="route-create-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Domain<select name="domain_id" required>{% for domain in domains %}<option value="{{ domain._id }}">{{ domain.domain }} · {{ domain.status }}</option>{% endfor %}</select></label>
+    <label>Path<input name="path" value="/" required></label>
+    <label>Purpose<input name="goal" placeholder="Main campaign page"></label>
+    <button class="primary" type="submit">Map path</button>
+  </form>
+  {% else %}<div class="inline-note"><strong>No connected domains.</strong><span><a href="{{ url_for('domains_workspace') }}">Add and verify a hostname first.</a></span></div>{% endif %}
+
+  {% if routes %}<div class="route-list detailed-route-list">{% for route in routes %}<div class="route-row"><div class="route-path"><code>{{ route.path }}</code><div><strong>{{ route.domain }}</strong><span>{{ 'Domain active' if route.domain_live else 'Waiting for domain activation' }} · {{ route.status }}</span></div></div><div class="route-actions">{% if route.domain_live and page.published %}<a target="_blank" rel="noopener" class="secondary button-link small-button" href="{{ route.public_url }}">Open live ↗</a>{% endif %}<form method="post" action="{{ url_for('domain_route_delete', route_id=route.id) }}" onsubmit="return confirm('Remove this domain path?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="icon-danger" type="submit">×</button></form></div></div>{% endfor %}</div>{% endif %}
+</section>
+{% endblock %}
+{% block scripts %}<script>document.querySelectorAll('[data-viewport]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-viewport]').forEach(b=>b.classList.remove('active'));button.classList.add('active');document.getElementById('previewStage').dataset.viewport=button.dataset.viewport;document.getElementById('viewportLabel').textContent=button.textContent;}));</script>{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Campaigns · Newsjacking{% endblock %}
+{% block content %}
+<div class="page-head" data-live-watch data-live-scope="campaigns">
+  <div><div class="eyebrow">Campaigns</div><h1>Campaign workspaces</h1><p>Campaigns are operating briefs built from explicit Collection evidence. Select the source material, review the generated strategy, then activate.</p></div>
+  <a class="primary button-link" href="{{ url_for('campaign_new') }}">New campaign</a>
+</div>
+<section class="panel">
+  <div class="panel-head"><div><h2>All campaigns</h2><p class="muted">Draft setup, active briefs, and paused workspaces.</p></div><span class="count-pill">{{ campaigns|length }}</span></div>
+  {% if campaigns %}<div class="campaign-list">{% for campaign in campaigns %}{% set setup = campaign.setup_status or 'complete' %}<a class="campaign-row" href="{% if setup in ['queued','researching','suggestions_ready','failed'] %}{{ url_for('campaign_setup', campaign_id=campaign._id) }}{% elif setup == 'review' %}{{ url_for('campaign_review', campaign_id=campaign._id) }}{% else %}{{ url_for('campaign_detail', campaign_id=campaign._id) }}{% endif %}"><div class="campaign-avatar">{{ (campaign.title or 'C')[:1]|upper }}</div><div class="campaign-row-copy"><strong>{{ campaign.title }}</strong><span>{{ campaign.campaign_summary or campaign.campaign_context or 'Strategy summary will appear after guided setup.' }}</span><small>{{ campaign.created_at|dt }}</small></div><div class="campaign-row-state">{% if setup != 'complete' %}<span class="badge soft">{{ setup|replace('_',' ') }}</span>{% endif %}<span class="badge">{{ campaign.status or 'draft' }}</span></div></a>{% endfor %}</div>{% else %}<div class="empty-callout"><strong>No campaign workspaces yet.</strong><span>Create one from selected Collection evidence. NJS proposes the audience, objective, editorial direction, and relevance keywords for you to review.</span><a class="primary button-link" href="{{ url_for('campaign_new') }}">Create first campaign</a></div>{% endif %}
+</section>
+{% endblock %}

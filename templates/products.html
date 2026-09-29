@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Products · Newsjacking{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="eyebrow">Products</div><h1>Promotion library</h1><p>Products define what may be offered to a reader. Each product can reuse Collection evidence while keeping its destination, CTA, positioning, proof points and claim boundaries in one place.</p></div>
+  <a class="primary button-link" href="{{ url_for('product_new') }}">New product</a>
+</div>
+<div class="workflow-ribbon" aria-label="Newsjacking content model">
+  <div><span>1</span><strong>Collections</strong><small>Facts and evidence</small></div><i>→</i>
+  <div><span>2</span><strong>Campaigns</strong><small>Audience + direction</small></div><i>→</i>
+  <div class="active"><span>3</span><strong>Products</strong><small>Offer + CTA</small></div><i>→</i>
+  <div><span>4</span><strong>Workers</strong><small>Combine into articles</small></div>
+</div>
+<section class="panel">
+  <div class="panel-head"><div><h2>All products</h2><p class="muted">Reusable offers available to Newsjack Workers.</p></div><span class="count-pill">{{ products|length }}</span></div>
+  {% if products %}
+  <div class="product-list">
+    {% for product in products %}
+    <a class="product-row" href="{{ url_for('product_detail', product_id=product._id) }}">
+      <div class="product-mark">{{ (product.name or 'P')[:1]|upper }}</div>
+      <div class="product-row-copy"><strong>{{ product.name }}</strong><span>{{ product.tagline or product.description or 'No positioning summary yet.' }}</span><small>{{ product.product_url or 'No product link' }}</small></div>
+      <div class="product-row-meta"><span>{{ product.evidence_count }} evidence</span><span>{{ product.worker_count }} worker{{ '' if product.worker_count == 1 else 's' }}</span><b class="badge {{ 'signed' if product.status == 'active' else '' }}">{{ product.status or 'draft' }}</b></div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-callout action-empty-state"><strong>No products yet.</strong><span>Create the thing you want an article to lead toward. Add its factual product evidence, URL and CTA once, then reuse it across multiple Workers.</span><a class="primary button-link" href="{{ url_for('product_new') }}">Create first product</a></div>
+  {% endif %}
+</section>
+{% endblock %}

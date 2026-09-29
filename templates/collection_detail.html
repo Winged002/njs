@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ collection.name }} · Collections{% endblock %}
+{% block content %}
+<div class="page-head" data-live-watch data-live-scope="collection" data-live-id="{{ collection._id }}"><div><div class="eyebrow">COLLECTION</div><h1>{{ collection.name }}</h1><p>{{ collection.description or 'Reusable evidence library.' }}</p></div><a class="secondary button-link" href="{{ url_for('campaign_new') }}">Build campaign from evidence →</a></div>
+
+<div class="task-guide compact-task-guide" aria-label="Evidence workflow">
+  <div><span>1</span><strong>Add a source</strong><small>Website, file, video or manual note.</small></div>
+  <div><span>2</span><strong>Inspect extracted items</strong><small>NJS splits sources into reusable evidence.</small></div>
+  <div><span>3</span><strong>Use only what matters</strong><small>Select exact items later when building a campaign or page.</small></div>
+</div>
+
+<div class="collection-ingest-grid">
+<section class="panel ingest-card">
+  <h3>Web page</h3><p class="muted">Scrape the page, extract text/images and discover internal + external links.</p>
+  <form method="post" action="{{ url_for('collection_add_url', collection_id=collection._id) }}" class="form-stack compact-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><textarea name="urls" rows="3" required placeholder="https://example.com/product
+https://example.com/about"></textarea><button class="primary">Add & inspect</button></form>
+</section>
+<section class="panel ingest-card">
+  <h3>Documents</h3><p class="muted">PDF, DOCX, ODT, XLS/XLSX, CSV, TXT, MD and RTF. Files are split into selectable evidence items.</p>
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('collection_upload', collection_id=collection._id) }}" class="form-stack compact-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input name="files" type="file" multiple required><button class="primary">Upload & extract</button></form>
+</section>
+<section class="panel ingest-card">
+  <h3>YouTube transcript</h3><p class="muted">Supadata retrieves captions/transcript and stores it as selectable evidence.</p>
+  <form method="post" action="{{ url_for('collection_add_youtube', collection_id=collection._id) }}" class="form-stack compact-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><textarea name="urls" rows="3" required placeholder="https://youtube.com/watch?v=...
+https://youtu.be/..."></textarea><input name="title" placeholder="Optional label when adding one video"><button class="primary">Add video(s)</button></form>
+</section>
+<section class="panel ingest-card">
+  <h3>Manual note</h3><p class="muted">Add interview notes, positioning, constraints or information not available online.</p>
+  <form method="post" action="{{ url_for('collection_add_note', collection_id=collection._id) }}" class="form-stack compact-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input name="title" placeholder="Note title"><textarea name="text" required rows="3" placeholder="Paste or write information..."></textarea><button class="primary">Add note</button></form>
+</section>
+</div>
+
+<section class="panel collection-sources-panel">
+  <div class="panel-head"><div><h2>Collected sources</h2><p class="muted">Every source stays inspectable. Web sources expose discovered links without scraping them automatically.</p></div><span class="count-pill">{{ sources|length }}</span></div>
+  {% if sources %}<div class="source-stack">{% for source in sources %}
+  <details class="source-card" {% if loop.first %}open{% endif %}>
+    <summary>
+      <span class="source-kind">{{ {'url':'WEB','document':'FILE','youtube':'VIDEO','note':'NOTE'}.get(source.source_type, source.source_type|upper) }}</span>
+      <span class="source-summary-main"><strong>{{ source.title or source.original_name or source.url or 'Source' }}</strong><small>{{ source.url or source.original_name or '' }}</small></span>
+      <span class="badge">{{ source.status }}</span>
+      <span class="muted small">{{ source.item_count or 0 }} items</span>
+    </summary>
+    <div class="source-card-body">
+      {% if source.error %}<div class="inline-note danger-note"><strong>Processing error</strong><span>{{ source.error }}</span><form method="post" action="{{ url_for('collection_retry_source', collection_id=collection._id, source_id=source._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary">Retry</button></form></div>{% endif %}
+      {% set source_items = items_by_source.get(source._id|string, []) %}
+      {% if source_items %}<div class="evidence-item-grid">{% for item in source_items %}
+        <div class="evidence-item evidence-{{ item.item_type }}">
+          {% if item.image_url %}<img src="{{ item.image_url }}" alt="{{ item.title }}" loading="lazy">{% endif %}
+          <div><span class="item-type">{{ item.item_type|replace('_',' ') }}</span><strong>{{ item.title }}</strong>{% if item.text %}<p>{{ item.text[:360] }}{% if item.text|length > 360 %}…{% endif %}</p>{% endif %}{% if item.url %}<small>{{ item.url }}</small>{% endif %}</div>
+        </div>
+      {% endfor %}</div>{% elif source.status == 'processing' or source.status == 'queued' %}<div class="empty-callout"><strong>Processing…</strong><span>Refresh this page when extraction finishes.</span></div>{% endif %}
+
+      {% if source.discovered_links %}
+      <div class="discovered-links-wrap">
+        <div class="discovered-head"><div><h3>Discovered pages</h3><p class="muted">Click Scrape only for pages you want to add as evidence. External links stay clearly distinguished.</p></div><span>{{ source.internal_link_count or 0 }} internal · {{ source.external_link_count or 0 }} external</span></div>
+        <div class="discovered-links">{% for link in source.discovered_links %}
+          <div class="discovered-link-row"><span class="link-kind {{ link.kind }}">{{ link.kind }}</span><div><strong>{{ link.label or link.url }}</strong><small>{{ link.url }}</small></div>{% if link.url in collected_urls %}<span class="badge">collected</span>{% else %}<form method="post" action="{{ url_for('collection_scrape_link', collection_id=collection._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="source_id" value="{{ source._id }}"><input type="hidden" name="url" value="{{ link.url }}"><input type="hidden" name="label" value="{{ link.label }}"><input type="hidden" name="kind" value="{{ link.kind }}"><button class="secondary small-button">Scrape</button></form>{% endif %}</div>
+        {% endfor %}</div>
+      </div>{% endif %}
+    </div>
+  </details>{% endfor %}</div>
+  {% else %}<div class="empty-callout"><strong>This collection is empty.</strong><span>Add a website, document, video or note above.</span></div>{% endif %}
+</section>
+{% endblock %}

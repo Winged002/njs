@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Shape strategy · {{ campaign.title }}{% endblock %}
+{% block content %}
+<div class="wizard-shell" data-live-watch data-live-scope="campaign" data-live-id="{{ campaign._id }}">
+  <aside class="wizard-rail">
+    <a class="back-link" href="{{ url_for('campaign_list') }}">← Campaigns</a>
+    <div class="wizard-kicker">Campaign launch</div>
+    <h2>{{ campaign.title }}</h2>
+    <div class="wizard-steps">
+      <div class="wizard-step done"><span>✓</span><div><strong>Evidence</strong><small>Source material saved</small></div></div>
+      <div class="wizard-step current"><span>2</span><div><strong>Suggestions</strong><small>Choose a direction</small></div></div>
+      <div class="wizard-step"><span>3</span><div><strong>Review</strong><small>Approve operating brief</small></div></div>
+    </div>
+    {% if campaign.website_url %}<div class="rail-note"><strong>Research source</strong><p>{{ campaign.website_url }}</p>{% if campaign.website_research and campaign.website_research.title %}<small>{{ campaign.website_research.title }}</small>{% endif %}</div>{% endif %}
+  </aside>
+  <section class="wizard-main">
+    <div class="page-head compact-head"><div><div class="eyebrow">STEP 2 OF 3</div><h1>Shape the strategy from suggestions</h1><p>Each section starts with the system's recommended option. Change only what you disagree with.</p></div></div>
+
+    {% if campaign.setup_status in ['queued','researching'] %}
+      <section class="panel processing-card" id="processingCard">
+        <div class="spinner"></div>
+        <div><h2>Preparing campaign suggestions</h2><p>Researching the supplied context and generating audience, objective, editorial, and engagement options.</p><small id="processingState">{{ campaign.setup_status|title }}</small></div>
+      </section>
+    {% elif campaign.setup_status == 'failed' %}
+      <section class="panel error-panel"><h2>Suggestion generation did not complete</h2><p>{{ campaign.setup_error or 'No error detail was recorded.' }}</p><form method="post" action="{{ url_for('campaign_prepare', campaign_id=campaign._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="primary">Retry research & suggestions</button></form></section>
+    {% elif campaign.strategy_suggestions %}
+      {% set s = campaign.strategy_suggestions %}
+      {% set recommended = s.recommended or {} %}
+      <section class="suggestion-summary panel"><div><span class="ai-pill">AI prepared</span><h2>{{ s.campaign_summary or 'Campaign operating brief prepared' }}</h2><p>Use the options below as a starting point. The selections are not locked until you continue.</p></div><div class="keyword-cloud">{% for keyword in s.keywords or [] %}<span>{{ keyword }}</span>{% endfor %}</div></section>
+
+      <form method="post" action="{{ url_for('campaign_strategy', campaign_id=campaign._id) }}" class="strategy-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% set sections = [
+          ('audience','Audience','Who should plausibly care about the news','audience_options'),
+          ('objective','Objective','What should change after they engage','objective_options'),
+          ('blueprint','Editorial blueprint','How Newsjacking should turn relevance into useful articles','blueprint_options'),
+          ('engagement','Engagement approach','How the campaign earns attention without forcing promotion','engagement_options')
+        ] %}
+        {% for key, title, description, option_key in sections %}
+        <section class="strategy-section">
+          <div class="strategy-heading"><div class="step-bubble">{{ loop.index }}</div><div><span class="eyebrow">STRATEGY DIMENSION</span><h2>{{ title }}</h2><p>{{ description }}</p></div></div>
+          <div class="option-grid">
+            {% for option in s[option_key] %}
+            <label class="option-card">
+              <input type="radio" name="{{ key }}" value="{{ option.id }}" {% if recommended[key] == option.id %}checked{% endif %} required>
+              <span class="option-check">✓</span>
+              <span class="option-topline">{% if recommended[key] == option.id %}<span class="recommended-pill">Recommended</span>{% else %}<span class="alternative-pill">Alternative</span>{% endif %}</span>
+              <strong>{{ option.name }}</strong>
+              <p>{{ option.summary or option.description or option.approach or option.method }}</p>
+              {% if option|features %}<div class="feature-chips">{% for feature in option|features %}<span>{{ feature }}</span>{% endfor %}</div>{% endif %}
+              {% if option.recommended_reason %}<small>{{ option.recommended_reason }}</small>{% endif %}
+            </label>
+            {% endfor %}
+          </div>
+        </section>
+        {% endfor %}
+        <div class="submit-dock"><div><strong>Next: review the complete brief</strong><span>Only selected options will become campaign context.</span></div><button class="primary" type="submit">Continue to review →</button></div>
+      </form>
+    {% else %}
+      <section class="panel"><h2>No suggestions are available yet.</h2><form method="post" action="{{ url_for('campaign_prepare', campaign_id=campaign._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="primary">Generate suggestions</button></form></section>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}{% endblock %}

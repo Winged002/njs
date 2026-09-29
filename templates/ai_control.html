@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}AI Control · {{ app_name }}{% endblock %}
+{% block workspace_context %}<span class="workspace-slash">/</span><strong>AI Control</strong>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Syntal AI</p>
+    <h1>AI Control</h1>
+    <p class="page-subtitle">First-party NJS capabilities available to authenticated Syntal AI tool calls.</p>
+  </div>
+</div>
+
+<div class="detail-metric-strip ai-control-metrics">
+  <div><span>Available tools</span><strong>{{ tool_count }}</strong></div>
+  <div><span>Read</span><strong>{{ risk_counts.get('read', 0) }}</strong></div>
+  <div><span>Write</span><strong>{{ risk_counts.get('write', 0) }}</strong></div>
+  <div><span>External</span><strong>{{ risk_counts.get('external', 0) }}</strong></div>
+  <div><span>Destructive</span><strong>{{ risk_counts.get('destructive', 0) }}</strong></div>
+</div>
+
+<div class="detail-workspace">
+  <div class="detail-main-stack">
+    {% for group, tools in tool_groups %}
+    <section class="panel ai-control-panel">
+      <div class="panel-head"><div><h2>{{ group|replace('_',' ')|title }}</h2><p>{{ tools|length }} exposed capabilities</p></div></div>
+      <div class="ai-control-list">
+        {% for tool in tools %}
+        <div class="ai-control-row">
+          <div class="ai-control-copy"><strong>{{ tool.name }}</strong><small>{{ tool.description }}</small></div>
+          <div class="ai-control-actions"><span class="pill">{{ tool.risk }}</span><code>{{ tool.method }}</code></div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+  <aside class="detail-side-stack">
+    <section class="side-card">
+      <div class="side-card-head"><div><h3>Discovery</h3></div></div>
+      <div class="ai-control-side-copy">
+        <p>Syntal AI discovers this tool catalog from either authenticated manifest endpoint.</p>
+        {% for path in manifest_paths %}<code class="ai-control-code">{{ path }}</code>{% endfor %}
+      </div>
+    </section>
+    <section class="side-card">
+      <div class="side-card-head"><div><h3>Authorization</h3></div></div>
+      <div class="ai-control-side-copy">
+        <p>Every tool call is revalidated against Syntal SSO and the active organization before NJS reads or changes workspace data.</p>
+        <p>External and destructive operations remain visible as separate risk classes so Syntal AI can require operator approval.</p>
+      </div>
+    </section>
+  </aside>
+</div>
+{% endblock %}

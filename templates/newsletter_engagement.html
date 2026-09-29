@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Engagement Intelligence · NJS{% endblock %}
+{% block workspace_context %}<span class="workspace-slash">/</span><strong>Engagement Intelligence</strong>{% endblock %}
+{% block content %}
+<div class="page-head engagement-page-head">
+  <div>
+    <p class="eyebrow">BLACKBOOK + MAILCHIMP</p>
+    <h1>Engagement Intelligence</h1>
+    <p class="page-subtitle">Analyze up to 2,500 contacts per batch. Each contact runs independently; terminal Mailchimp/API failures leave Queue and move to Failed while the rest of the batch continues.</p>
+  </div>
+  <form method="post" action="{{ url_for('newsletter_engagement_refresh') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="secondary" type="submit">Refresh Mailchimp queue</button>
+  </form>
+</div>
+
+{% if bridge_error %}
+<div class="empty-callout"><strong>BlackBook Engagement Bridge unavailable</strong><span>{{ bridge_error }}</span><span>Install the bundled v4 engagement bridge into BlackBook, rebuild BlackBook web/worker, then reload this page.</span></div>
+{% else %}
+{% set counts = overview.get('counts') or {} %}
+<div class="detail-metric-strip engagement-metrics">
+  <div><span>Queue</span><strong>{{ counts.get('queue', 0) }}</strong></div>
+  <div><span>Failed</span><strong>{{ counts.get('failed', 0) }}</strong></div>
+  <div><span>Inactive</span><strong>{{ counts.get('inactive', 0) }}</strong></div>
+  <div><span>Low</span><strong>{{ counts.get('low', 0) }}</strong></div>
+  <div><span>Medium</span><strong>{{ counts.get('medium', 0) }}</strong></div>
+  <div><span>High</span><strong>{{ counts.get('high', 0) }}</strong></div>
+  <div><span>Interests</span><strong>{{ overview.get('interest_count', 0) }}</strong></div>
+</div>
+
+<div class="engagement-tabs">
+  {% for key,label in [('queue','Queue'),('failed','Failed'),('inactive','Inactive'),('low','Low'),('medium','Medium'),('high','High'),('all','All')] %}
+    <a class="engagement-tab {{ 'is-active' if bucket == key else '' }}" href="{{ url_for('newsletter_engagement', bucket=key, interest=interest_filter) }}">{{ label }} <span>{{ counts.get(key, counts.get('total',0) if key == 'all' else 0) }}</span></a>
+  {% endfor %}
+</div>
+
+<div class="detail-workspace engagement-layout">
+  <main class="detail-main-stack">
+    <section class="builder-card">
+      <div class="panel-head">
+        <div><h2>{{ bucket|title }} audience</h2><p>{% if bucket == 'queue' %}People waiting for engagement analysis.{% elif bucket == 'failed' %}People removed from Queue after a per-contact analysis failure. Review the error and retry only when appropriate.{% elif bucket == 'inactive' %}People with zero meaningful Mailchimp engagement after import.{% else %}People classified by AI engagement score and canonical interests.{% endif %}</p></div>
+        <span class="count-pill">{{ people|length }}</span>
+      </div>
+
+      <form method="get" action="{{ url_for('newsletter_engagement') }}" class="engagement-filter-bar">
+        <input type="hidden" name="bucket" value="{{ bucket }}">
+        <input name="q" value="{{ q }}" placeholder="Search name, email, organization or role">
+        <select name="interest">
+          <option value="">All interests</option>
+          {% for row in interests %}<option value="{{ row.key }}" {{ 'selected' if interest_filter == row.key else '' }}>{{ row.name }} ({{ row.person_count }})</option>{% endfor %}
+        </select>
+        <button class="secondary" type="submit">Filter</button>
+        {% if q or interest_filter %}<a class="secondary button-link" href="{{ url_for('newsletter_engagement', bucket=bucket) }}">Clear</a>{% endif %}
+      </form>
+
+      {% if bucket in ['queue', 'failed'] %}
+      <form method="post" action="{{ url_for('newsletter_engagement_analyze') }}" id="engagement-analysis-form">
+        <input type="hidden" name="return_bucket" value="{{ bucket }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="engagement-bulk-bar">
+          <div class="engagement-select-actions">
+            <button type="button" class="secondary" data-max-select data-limit="{{ max_select }}">Max select {{ max_select }}</button>
+            <button type="button" class="secondary" data-clear-select>Clear</button>
+            <strong><span data-selected-count>0</span> selected</strong>
+          </div>
+          <div class="engagement-run-actions">
+            <label>Behavior window<select name="days"><option value="365">1 year</option><option value="1095">3 years</option><option value="3650" selected>10 years</option><option value="36500">All available</option></select></label>
+            <button class="primary" type="submit">{{ 'Retry selected failed' if bucket == 'failed' else 'Bulk import engagement & analyze' }}</button>
+          </div>
+        </div>
+        <div class="engagement-table-wrap">
+          <table class="engagement-table">
+            <thead><tr><th class="check-col"><input type="checkbox" data-toggle-visible aria-label="Select visible"></th><th>Person</th><th>Mailchimp</th><th>Status</th><th>{{ 'Failed / error' if bucket == 'failed' else 'Last import' }}</th></tr></thead>
+            <tbody>
+            {% for person in people %}
+              <tr>
+                <td class="check-col"><input type="checkbox" name="person_ids" value="{{ person.id }}" data-person-check></td>
+                <td><strong>{{ person.name or person.email or 'Unnamed contact' }}</strong><small>{{ person.email }}{% if person.organization %} · {{ person.organization }}{% endif %}{% if person.role %} · {{ person.role }}{% endif %}</small></td>
+                <td><span class="pill">{{ person.mailchimp_status or 'unknown' }}</span></td>
+                <td><span class="status-badge">{{ person.analysis_status or ('failed' if bucket == 'failed' else 'queue') }}</span>{% if person.failure_code %}<small>{{ person.failure_code }}</small>{% endif %}</td>
+                <td>{% if bucket == 'failed' %}<strong class="error-text">{{ person.error or 'Analysis failed' }}</strong><small>{% if person.failure_stage %}{{ person.failure_stage|title }} · {% endif %}{{ person.failed_at|dt if person.failed_at else 'Failed during analysis' }}</small>{% else %}{{ person.last_import_at|dt if person.last_import_at else 'Not imported' }}{% endif %}</td>
+              </tr>
+            {% else %}<tr><td colspan="5"><div class="empty-callout"><strong>{{ 'No failed contacts.' if bucket == 'failed' else 'Queue is empty.' }}</strong><span>{{ 'Failures will appear here instead of returning to Queue.' if bucket == 'failed' else 'Refresh Mailchimp or switch to another engagement bucket.' }}</span></div></td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </form>
+      {% else %}
+      <div class="engagement-table-wrap">
+        <table class="engagement-table">
+          <thead><tr><th>Person</th><th>Engagement</th><th>Interests</th><th>Analyzed</th></tr></thead>
+          <tbody>
+          {% for person in people %}
+            <tr>
+              <td><strong>{{ person.name or person.email or 'Unnamed contact' }}</strong><small>{{ person.email }}{% if person.organization %} · {{ person.organization }}{% endif %}</small></td>
+              <td><span class="engagement-score engagement-score-{{ person.bucket }}">{{ person.engagement_score }}</span><small>{{ person.bucket|title }}</small></td>
+              <td><div class="interest-chip-row">{% for item in person.interests[:6] %}<a class="interest-chip" href="{{ url_for('newsletter_engagement', bucket=bucket, interest=item.key) }}">{{ item.name }} <span>{{ item.score }}</span></a>{% else %}<span class="muted">No inferred interests</span>{% endfor %}</div></td>
+              <td>{{ person.analyzed_at|dt if person.analyzed_at else '—' }}</td>
+            </tr>
+          {% else %}<tr><td colspan="4"><div class="empty-callout"><strong>No people in this bucket.</strong><span>Run engagement analysis from the Queue tab.</span></div></td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </section>
+  </main>
+
+  <aside class="detail-side-stack">
+    <section class="side-card">
+      <div class="side-card-head"><div><span class="summary-kicker">INTEREST CATALOG</span><h3>Reusable interests</h3></div></div>
+      <p>AI sees only the selected person's engagement plus the existing canonical-interest catalog. It does not compare against other contacts. Equivalent interests are reused; only genuinely new interests create a new catalog entry.</p>
+      <div class="interest-catalog-list">
+        {% for row in interests[:18] %}
+        <a href="{{ url_for('newsletter_engagement', bucket='all', interest=row.key) }}"><span><strong>{{ row.name }}</strong><small>{{ row.person_count }} people · avg {{ row.average_score }}</small></span><span class="pill">{{ row.buckets.get('high',0) }} high</span></a>
+        {% else %}<div class="side-empty">Interest catalog appears after analyzed engagement produces usable signals.</div>{% endfor %}
+      </div>
+    </section>
+
+    <section class="side-card">
+      <div class="side-card-head"><div><span class="summary-kicker">RECENT BATCHES</span><h3>Analysis jobs</h3></div></div>
+      <div class="engagement-batch-list">
+        {% for batch in batches %}
+        <div class="engagement-batch-row"><span><strong>{{ batch.status|title }} · {{ batch.processed }}/{{ batch.total }}</strong><small>{{ batch.created_at|dt }}{% if batch.counts and batch.counts.get('failed',0) %} · {{ batch.counts.get('failed',0) }} failed{% endif %}{% if batch.error %} · {{ batch.error }}{% endif %}</small></span><span>{{ batch.progress }}%</span></div>
+        {% else %}<div class="side-empty">No Engagement Intelligence batches yet.</div>{% endfor %}
+      </div>
+    </section>
+
+    <section class="side-card">
+      <div class="side-card-head"><div><span class="summary-kicker">CLASSIFICATION</span><h3>Engagement buckets</h3></div></div>
+      {% set thresholds = overview.get('thresholds') or {} %}
+      <div class="summary-facts"><div><span>Failed</span><strong>Terminal per-contact error</strong></div><div><span>Inactive</span><strong>0 meaningful events</strong></div><div><span>Low</span><strong>1–{{ thresholds.get('low_max',39) }}</strong></div><div><span>Medium</span><strong>{{ thresholds.get('low_max',39)+1 }}–{{ thresholds.get('medium_max',69) }}</strong></div><div><span>High</span><strong>{{ thresholds.get('high_min',70) }}–100</strong></div></div>
+    </section>
+  </aside>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const checks=[...document.querySelectorAll('[data-person-check]')];
+  const count=document.querySelector('[data-selected-count]');
+  const update=()=>{ if(count) count.textContent=checks.filter(x=>x.checked).length; };
+  checks.forEach(x=>x.addEventListener('change',update));
+  document.querySelector('[data-toggle-visible]')?.addEventListener('change',e=>{ checks.forEach(x=>x.checked=e.target.checked); update(); });
+  document.querySelector('[data-max-select]')?.addEventListener('click',e=>{ const limit=Math.min(2500,parseInt(e.currentTarget.dataset.limit||'2500',10)); checks.forEach((x,i)=>x.checked=i<limit); update(); });
+  document.querySelector('[data-clear-select]')?.addEventListener('click',()=>{ checks.forEach(x=>x.checked=false); const top=document.querySelector('[data-toggle-visible]'); if(top) top.checked=false; update(); });
+  document.querySelector('#engagement-analysis-form')?.addEventListener('submit',e=>{ if(!checks.some(x=>x.checked)){ e.preventDefault(); alert('Select at least one person to analyze or retry.'); } });
+  update();
+})();
+</script>
+{% endblock %}

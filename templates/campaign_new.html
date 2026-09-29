@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}New campaign · Newsjacking{% endblock %}
+{% block content %}
+<div class="bonita-builder campaign-builder">
+  <header class="builder-hero">
+    <div>
+      <a class="builder-back" href="{{ url_for('campaign_list') }}">← Campaigns</a>
+      <div class="eyebrow">CAMPAIGN BUILDER</div>
+      <h1>Create the operating brief</h1>
+      <p>Choose the evidence and give NJS only the context it needs. Audience, objective and editorial direction are proposed next for your review.</p>
+    </div>
+    <div class="builder-progress" aria-label="Campaign creation progress">
+      <span class="is-current"><b>1</b><i>Evidence</i></span><span><b>2</b><i>Strategy</i></span><span><b>3</b><i>Approve</i></span>
+    </div>
+  </header>
+
+  <form method="post" class="builder-form" data-campaign-create-form>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="builder-layout">
+      <main class="builder-primary">
+        <section class="builder-card compact-card">
+          <div class="builder-section-head"><span class="builder-index">01</span><div><h2>Campaign basics</h2><p>Use a short internal name. Extra direction is optional and should only contain constraints not already present in the evidence.</p></div></div>
+          <div class="builder-fields two-up">
+            <label class="span-two">Campaign name<input name="title" maxlength="120" required autofocus value="{{ values.get('title','') if values else '' }}" placeholder="Example: Dealer Market Pulse" data-campaign-title></label>
+            <label class="span-two">Extra direction <span class="optional-pill">Optional</span><textarea name="campaign_context" rows="3" maxlength="2500" placeholder="Example: Focus on Bulgarian used-car dealers and practical business decisions, not consumer advice.">{{ values.get('campaign_context','') if values else '' }}</textarea></label>
+          </div>
+        </section>
+
+        <section class="builder-card evidence-workbench">
+          <div class="builder-section-head"><span class="builder-index">02</span><div><h2>Evidence source of truth</h2><p>Mix items from any Collection. Only checked items are used when NJS proposes the campaign strategy.</p></div></div>
+          {% if collection_cards %}
+          <div class="evidence-command-bar">
+            <label class="evidence-search"><span>Search evidence</span><input type="search" placeholder="Search title, type or text…" data-evidence-filter autocomplete="off"></label>
+            <div class="evidence-command-actions"><strong data-evidence-count>0 selected</strong><button type="button" class="secondary compact-button" data-evidence-select-visible>Select visible</button><button type="button" class="secondary compact-button" data-evidence-clear>Clear</button></div>
+          </div>
+          <div class="collection-picker bonita-evidence-picker">
+            {% for group in collection_cards %}
+            <details class="picker-collection" {% if loop.first %}open{% endif %} data-evidence-group>
+              <summary><span><strong>{{ group["collection"]["name"] }}</strong><small>{{ group["collection"]["description"] or 'Reusable evidence collection' }}</small></span><span>{{ group["items"]|length }} items</span></summary>
+              <div class="picker-items evidence-list">
+                {% for item in group["items"] %}
+                <label class="picker-item evidence-choice" data-evidence-search="{{ (item.title ~ ' ' ~ item.item_type ~ ' ' ~ (item.text or '')[:500])|lower }}">
+                  <input type="checkbox" name="evidence_item_ids" value="{{ item._id }}" {% if values and item._id|string in values.getlist('evidence_item_ids') %}checked{% endif %}>
+                  <span class="picker-check" aria-hidden="true"></span>
+                  <span class="picker-copy"><span class="item-type">{{ item.item_type|replace('_',' ') }}</span><strong>{{ item.title }}</strong><small>{{ (item.text or ('Image evidence' if item.image_url else 'Evidence item'))[:220] }}</small></span>
+                  {% if item.image_url %}<img class="picker-thumb" src="{{ item.image_url }}" alt="" loading="lazy">{% endif %}
+                </label>
+                {% endfor %}
+              </div>
+            </details>
+            {% endfor %}
+          </div>
+          <div class="evidence-no-results" data-evidence-empty hidden>No evidence matches this search.</div>
+          {% else %}
+          <div class="empty-callout action-empty-state"><strong>You need evidence before creating a campaign.</strong><span>Create a Collection, add source material, then return here.</span><a class="primary button-link" href="{{ url_for('collection_list') }}">Create Collection</a></div>
+          {% endif %}
+        </section>
+      </main>
+
+      <aside class="builder-side">
+        <section class="builder-summary-card">
+          <div class="summary-kicker">CAMPAIGN SUMMARY</div>
+          <h2 data-campaign-summary-title>Untitled campaign</h2>
+          <p>The next step generates strategy from the exact evidence selected here.</p>
+          <div class="summary-facts">
+            <div><span>Evidence</span><strong data-summary-evidence>0 items</strong></div>
+            <div><span>Next</span><strong>Strategy review</strong></div>
+            <div><span>Uses</span><strong>Workers + articles</strong></div>
+          </div>
+          <div class="summary-rule"><span></span><p>Unselected Collection items are not included.</p></div>
+          <button class="primary builder-primary-action" type="submit" data-campaign-submit {% if not collection_cards %}disabled{% endif %}>Generate strategy →</button>
+          <small class="summary-foot" data-submit-help>Choose at least one evidence item to continue.</small>
+        </section>
+      </aside>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const form = document.querySelector('[data-campaign-create-form]'); if (!form) return;
+  const checks=[...form.querySelectorAll('input[name="evidence_item_ids"]')], count=form.querySelector('[data-evidence-count]'), summaryCount=form.querySelector('[data-summary-evidence]'), submit=form.querySelector('[data-campaign-submit]'), help=form.querySelector('[data-submit-help]'), filter=form.querySelector('[data-evidence-filter]'), empty=form.querySelector('[data-evidence-empty]'), title=form.querySelector('[data-campaign-title]'), summaryTitle=form.querySelector('[data-campaign-summary-title]');
+  const visibleChoices=()=>[...form.querySelectorAll('[data-evidence-search]')].filter(el=>!el.hidden&&!el.closest('[data-evidence-group]')?.hidden);
+  function update(){const n=checks.filter(x=>x.checked).length;if(count)count.textContent=`${n} selected`;if(summaryCount)summaryCount.textContent=`${n} item${n===1?'':'s'}`;if(submit)submit.disabled=n===0;if(help)help.textContent=n?'NJS will propose the audience, objective and editorial direction for review.':'Choose at least one evidence item to continue.';if(summaryTitle)summaryTitle.textContent=(title?.value||'').trim()||'Untitled campaign';}
+  checks.forEach(x=>x.addEventListener('change',update)); title?.addEventListener('input',update);
+  filter?.addEventListener('input',()=>{const q=filter.value.trim().toLowerCase();let matches=0;form.querySelectorAll('[data-evidence-group]').forEach(group=>{let gm=0;group.querySelectorAll('[data-evidence-search]').forEach(el=>{const hit=!q||el.dataset.evidenceSearch.includes(q);el.hidden=!hit;if(hit){matches++;gm++;}});if(q&&gm)group.open=true;group.hidden=Boolean(q&&!gm);});if(empty)empty.hidden=matches!==0;});
+  form.querySelector('[data-evidence-select-visible]')?.addEventListener('click',()=>{visibleChoices().forEach(el=>{const cb=el.querySelector('input[type="checkbox"]');if(cb)cb.checked=true;});update();});
+  form.querySelector('[data-evidence-clear]')?.addEventListener('click',()=>{checks.forEach(cb=>cb.checked=false);update();}); update();
+})();
+</script>
+{% endblock %}

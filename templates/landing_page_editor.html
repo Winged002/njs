@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} · Landing Page Studio{% endblock %}
+{% block content %}
+<div class="bonita-detail-page landing-editor-page">
+  <header class="detail-hero">
+    <div class="detail-identity"><span class="detail-mark">LP</span><div><a class="builder-back" href="{{ url_for('landing_page_studio') }}">← Landing pages</a><div class="eyebrow">LANDING PAGE EDITOR</div><h1>{{ page.title }}</h1><p>{{ 'Manual editing enabled' if page.manual_mode else 'AI-generated page — manual editing is available at any time' }}</p></div></div>
+    <div class="actions">
+      {% if page.html %}<a class="secondary button-link" href="{{ url_for('page_preview', page_id=page._id) }}" target="_blank">Preview ↗</a>{% endif %}
+      <form method="post" action="{{ url_for('page_publish', page_id=page._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="primary" type="submit">{{ 'Unpublish' if page.published and page.published_revision == page.revision else ('Update live page' if page.published else 'Publish') }}</button></form>
+    </div>
+  </header>
+
+  <div class="detail-metric-strip">
+    <div><span>Status</span><strong>{{ 'Published' if page.published else (page.generation_status or 'Draft')|title }}</strong></div>
+    <div><span>Revision</span><strong>{{ page.revision or 0 }}</strong></div>
+    <div><span>Mode</span><strong>{{ 'Manual' if page.manual_mode else 'AI' }}</strong></div>
+    <div><span>Route</span><strong>{{ route.path if route else ('/p/' ~ page.public_id) }}</strong></div>
+  </div>
+
+  <div class="detail-workspace">
+    <main class="detail-main">
+      <form method="post" action="{{ url_for('landing_page_manual_save', page_id=page._id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <section class="builder-card">
+          <div class="builder-section-head"><span class="builder-index">01</span><div><h2>Page identity</h2><p>These fields are editable without AI and become a new revision when saved.</p></div></div>
+          <div class="builder-fields two-up">
+            <label>Page title<input name="title" value="{{ page.title or '' }}" required></label>
+            <label>Page type<select name="page_kind">{% for value,label in [('home','Home'),('about','About'),('services','Services'),('contact','Contact'),('resources','Resources'),('news','News'),('custom','Custom')] %}<option value="{{ value }}" {{ 'selected' if page.page_kind == value else '' }}>{{ label }}</option>{% endfor %}</select></label>
+            <label class="span-two">SEO title<input name="meta_title" value="{{ (page.metadata or {}).title or page.title or '' }}"></label>
+            <label class="span-two">Meta description<textarea name="meta_description" rows="2">{{ (page.metadata or {}).meta_description or '' }}</textarea></label>
+            <label class="span-two">Summary<textarea name="meta_summary" rows="2">{{ (page.metadata or {}).summary or '' }}</textarea></label>
+            <label class="span-two"><span>Article slot</span><span class="check-row"><input type="checkbox" name="include_articles" value="1" {{ 'checked' if page.include_articles else '' }}> Render dynamic NJS article cards when the slot exists</span></label>
+          </div>
+        </section>
+
+        <section class="builder-card">
+          <div class="builder-section-head"><span class="builder-index">02</span><div><h2>HTML editor</h2><p>Edit the complete page directly. Scripts, iframes and inline event handlers are stripped on save.</p></div><button type="button" class="secondary compact-button" data-refresh-preview>Refresh preview</button></div>
+          <textarea name="html" rows="30" spellcheck="false" data-html-editor style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.45">{{ page.html or '' }}</textarea>
+        </section>
+
+        <section class="builder-card">
+          <div class="builder-section-head"><span class="builder-index">03</span><div><h2>Live preview</h2><p>Local preview of the editor buffer. Publish only after reviewing the server-rendered preview.</p></div></div>
+          <div class="preview-stage" style="min-height:520px"><iframe title="Landing page editor preview" data-local-preview sandbox style="width:100%;height:520px;border:0;background:white"></iframe></div>
+        </section>
+
+        <div class="detail-save-bar"><div><strong>Save manual revision</strong><span>The current revision is preserved in history before the new one is written.</span></div><button class="primary" type="submit">Save changes</button></div>
+      </form>
+    </main>
+
+    <aside class="detail-side">
+      <section class="side-card">
+        <div class="side-card-head"><div><span class="summary-kicker">AI ASSISTANCE</span><h3>Revise this page</h3></div></div>
+        <p>Describe the change. NJS preserves the current revision, then queues an AI revision from your instructions.</p>
+        <form method="post" action="{{ url_for('website_request_changes', page_id=page._id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="version" value="current"><input type="hidden" name="return_to" value="{{ url_for('landing_page_editor', page_id=page._id) }}">
+          <textarea name="notes" rows="5" required placeholder="Example: Make the hero more concise, add a pricing comparison section, and keep the current visual style."></textarea>
+          <button class="primary" type="submit">Apply with AI</button>
+        </form>
+        <form method="post" action="{{ url_for('page_regenerate', page_id=page._id) }}" style="margin-top:10px"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary" type="submit">Regenerate full page with AI</button></form>
+      </section>
+
+      <section class="side-card"><div class="side-card-head"><div><span class="summary-kicker">REVISION HISTORY</span><h3>{{ versions|length }} saved revision{{ '' if versions|length == 1 else 's' }}</h3></div></div>
+        {% if versions %}<div class="side-link-list">{% for version in versions[:12] %}<div class="row-link"><span><strong>Revision {{ version.revision }}</strong><small>{{ version.reason }} · {{ version.created_at|dt }}</small></span><form method="post" action="{{ url_for('page_restore_version', page_id=page._id, version_id=version.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary compact-button" type="submit">Restore</button></form></div>{% endfor %}</div>{% else %}<div class="side-empty">Older revisions appear after the first edit or regeneration.</div>{% endif %}
+      </section>
+
+      <section class="side-card"><span class="summary-kicker">PAGE ACTIONS</span><h3>Reuse or remove</h3><form method="post" action="{{ url_for('landing_page_duplicate', page_id=page._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary" type="submit">Duplicate page</button></form></section>
+      <section class="side-card danger-side"><span class="summary-kicker">DANGER ZONE</span><h3>Delete page</h3><p>Deletes the page, route, revision history and AI change jobs. Published URLs stop resolving.</p><form method="post" action="{{ url_for('landing_page_delete', page_id=page._id) }}" onsubmit="return confirm('Delete this landing page and its revision history?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="danger" type="submit">Delete landing page</button></form></section>
+    </aside>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const editor=document.querySelector('[data-html-editor]'), frame=document.querySelector('[data-local-preview]'), btn=document.querySelector('[data-refresh-preview]');
+  if(!editor||!frame)return;
+  const render=()=>{frame.srcdoc=editor.value||'<p style="font-family:system-ui;padding:30px">Empty page</p>';};
+  btn?.addEventListener('click',render); render();
+})();
+</script>
+{% endblock %}
